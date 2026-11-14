@@ -178,16 +178,16 @@
     const v = g.video;
     if (!v) return thumbHTML(g, 'loading="eager"');
     if (v.kind === "file") {
-      return `<video class="pv" controls playsinline preload="metadata" ${g.thumbnail ? `poster="${esc(g.thumbnail)}"` : ""} src="${esc(v.src)}?v=${encodeURIComponent(g.updated || "1")}" data-pv-file></video>`;
+      return `<video class="pv" controls playsinline preload="metadata" src="${esc(v.src)}?v=${encodeURIComponent(g.updated || "1")}#t=0.1" data-pv-file></video>`;
     }
-    const bg = g.thumbnail ? `style="background-image:url('${esc(g.thumbnail)}')"` : "";
+    const bg = v.kind === "youtube" ? `style="background-image:url('https://i.ytimg.com/vi/${esc(v.id)}/hqdefault.jpg')"` : "";
     return `<button type="button" class="pv-lite" data-pv-embed="${v.kind}:${esc(v.id)}" ${bg} aria-label="${esc(g.title)} のPVを再生"><span class="pv-lite__btn">▶ PVを見る</span><span class="pv-lite__src">${v.kind === "youtube" ? "YouTube" : "TikTok"}</span></button>`;
   }
   function wirePlayer(root, g) {
     const vid = root.querySelector("[data-pv-file]");
     if (vid) {
       vid.addEventListener("error", () => {
-        root.innerHTML = thumbHTML(g, 'loading="eager"') + '<p class="pv-error">PVを読み込めませんでした</p>';
+        root.innerHTML = '<div class="thumb-fallback">PVを読み込めませんでした</div>';
       }, { once: true });
     }
     const lite = root.querySelector("[data-pv-embed]");
@@ -372,7 +372,13 @@
         : `<span class="muted">現在は QUVERIS 公式サイトのみで公開しています</span>`;
       root.innerHTML = `
         <div class="detail">
-          <div class="detail__media${g.video && g.video.vertical ? " detail__media--vertical" : ""}"><div data-media>${mediaHTML(g)}</div></div>
+          <div>
+            <div class="detail__media"><div>${thumbHTML(g, 'loading="eager"')}</div></div>
+            ${g.video ? `<div class="pv-block">
+              <span class="eyebrow">PV</span>
+              <div class="detail__media detail__media--pv${g.video.vertical ? " detail__media--vertical" : ""}"><div data-media>${mediaHTML(g)}</div></div>
+            </div>` : ""}
+          </div>
           <div>
             <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
               ${statusChip(g)}<span class="card__genre" style="color:var(--${g.accent === "purple" ? "purple-2" : "mint"})">${esc(g.genre)}</span>

@@ -369,6 +369,9 @@ button { font: inherit; color: inherit; }
 .hobby em { font-style: normal; color: var(--mint); }
 
 /* PV */
+.pv-block { margin-top: 26px; }
+.pv-block .eyebrow { margin-bottom: 12px; }
+.detail__media--pv > div { background: #000; }
 .pv-badge {
   position: absolute; right: 10px; top: 10px; z-index: 1; font-family: var(--font-pixel); font-size: 9px; line-height: 1.6;
   background: var(--yellow); color: var(--ink); padding: 3px 7px; box-shadow: 0 2px 0 var(--ink);
@@ -376,7 +379,7 @@ button { font: inherit; color: inherit; }
 .detail__media video.pv, .detail__media .pv-embed { width: 100%; height: 100%; display: block; background: #000; border: 0; object-fit: contain; }
 .pv-lite {
   position: relative; width: 100%; height: 100%; border: 0; padding: 0; cursor: pointer; display: grid; place-items: center;
-  background: #000 center / cover no-repeat; image-rendering: pixelated;
+  background: #0b1230 center / cover no-repeat;
 }
 .pv-lite::before { content: ""; position: absolute; inset: 0; background: rgba(5,7,22,.45); }
 .pv-lite__btn {
