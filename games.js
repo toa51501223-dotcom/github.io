@@ -7,7 +7,7 @@
  * entry : ゲーム本体の相対パス（games/<id>/index.html）
  * video : PV（games/<id>/pv.mp4 または YouTube / TikTok の URL）
  * links : 外部公開先 [{ label: "itch.io", url: "https://..." }]
- * 最終更新: 2026-11-14T06:08:15.673Z
+ * 最終更新: 2026-11-14T06:08:27.415Z
  * ===================================================================== */
 
 window.QUVERIS_SITE = {
@@ -74,30 +74,6 @@ window.QUVERIS_GAMES = [
       "スコアアタック",
       "回避",
       "1分で遊べる"
-    ],
-    "version": "1.0.0",
-    "updated": "2026-11-12",
-    "links": []
-  },
-  {
-    "id": "lumen-grid",
-    "title": "LUMEN GRID",
-    "genre": "パズル",
-    "summary": "タイルを押すと十字に光が反転。すべてのタイルを消灯させる思考型パズル。",
-    "description": "タイルを押すと、そのタイルと上下左右の光が反転します。すべての光を消せばステージクリア。\nステージは必ず解ける形で自動生成され、進むほど盤面が広く、手数が多くなります。1手戻す・リセット・ヒント機能つき。",
-    "status": "released",
-    "entry": "games/lumen-grid/index.html",
-    "thumbnail": "games/lumen-grid/thumb.png",
-    "accent": "purple",
-    "orientation": "any",
-    "controls": {
-      "pc": "クリックでタイル反転 / 矢印キーで選択 + Space・Enter で反転 / Z で1手戻す / R でリセット",
-      "mobile": "タイルをタップして反転"
-    },
-    "tags": [
-      "ロジック",
-      "ステージ制",
-      "じっくり"
     ],
     "version": "1.0.0",
     "updated": "2026-11-12",
