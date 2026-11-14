@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>管理ページ | QUVERIS</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0b1030">
+<link rel="icon" href="assets/img/favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="assets/css/style.css?v=11">
+<link rel="stylesheet" href="assets/css/admin.css?v=11">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+<script src="assets/js/admin.js?v=11" defer></script>
+</head>
+<body data-page="admin">
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="brand__icon"><img src="assets/img/favicon.png" alt="" width="40" height="40"></span><span class="brand__name">QUVER<span>I</span>S</span></a>
+    <nav class="nav"><a href="./">サイトを見る</a></nav>
+  </div>
+</header>
+
+<main class="wrap admin">
+  <div class="page-head" style="padding-bottom:8px">
+    <span class="eyebrow">ADMIN ONLY</span>
+    <h1>管理ページ</h1>
+    <p>ゲームの追加・削除・更新・PV、サイト本体の更新ができます。操作にはあなたの GitHub のトークンが必要です。</p>
+  </div>
+
+  <!-- LOGIN -->
+  <section class="pxwin admin-box" data-view="login" hidden>
+    <h2 class="admin-h">ログイン</h2>
+    <p class="muted">GitHub のトークンと、サイトを置いているリポジトリを入力してください。トークンはこの端末の中にだけ保存され、GitHub 以外には送信されません。</p>
+    <form data-login-form class="admin-form">
+      <label>GitHub のトークン
+        <input type="password" name="token" autocomplete="off" autocapitalize="off" spellcheck="false" required placeholder="github_pat_xxxxxxxx...">
+      </label>
+      <label>リポジトリ（ユーザー名/リポジトリ名）
+        <input type="text" name="repo" autocomplete="off" autocapitalize="off" spellcheck="false" required placeholder="例：quveris/quveris.github.io" data-repo-input>
+      </label>
+      <label>サイトの URL（Cloudflare Pages などで公開している場合）
+        <input type="text" name="siteUrl" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="例：https://github-io-dgm.pages.dev" data-siteurl-input>
+        <small>GitHub Pages（○○.github.io）で公開しているなら空欄でOK</small>
+      </label>
+      <label class="check"><input type="checkbox" name="remember" checked> この端末に保存する</label>
+      <button class="btn" type="submit">ログイン</button>
+    </form>
+    <details class="howto">
+      <summary>トークンの作り方</summary>
+      <ol>
+        <li>GitHub にログインして <b>github.com/settings/personal-access-tokens/new</b> を開く</li>
+        <li>Token name に「quveris-admin」、Expiration（有効期限）は長めを選ぶ</li>
+        <li>Repository access で「Only select repositories」→ サイトのリポジトリを選ぶ</li>
+        <li>Permissions の Repository permissions で「Contents」を <b>Read and write</b>、「Pages」を <b>Read-only</b> にする</li>
+        <li>「Generate token」を押して、表示された文字列をコピーしてここに貼り付け</li>
+      </ol>
+      <p class="muted">トークンは他の人に教えないでください。漏れたら同じ画面で削除（Revoke）すれば無効になります。</p>
+    </details>
+  </section>
+
+  <!-- MAIN -->
+  <div data-view="main" hidden>
+    <div class="admin-bar">
+      <span>リポジトリ：<b data-site-name>-</b></span>
+      <span class="admin-bar__btns">
+        <a class="btn btn--sm btn--ghost" data-site-link href="./" target="_blank" rel="noopener">サイトを開く</a>
+        <button class="btn btn--sm btn--ghost" type="button" data-logout>ログアウト</button>
+      </span>
+    </div>
+
+    <div class="admin-note" data-pages-note hidden style="margin:0 4px 24px"></div>
+
+    <section class="pxwin admin-box">
+      <h2 class="admin-h">ゲームを追加</h2>
+      <form data-add-form class="admin-form">
+        <label>ゲームのファイル <em>必須</em>
+          <input type="file" name="file" accept=".zip,.html,.htm,application/zip,text/html" required>
+          <small>HTMLファイル1つ、またはフォルダをまとめた zip。zip の中に <code>index.html</code> を入れてください。</small>
+        </label>
+        <label>サムネイル画像
+          <input type="file" name="thumb" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+          <small>横長（16:9）がおすすめ。なしでもOK（zip 内の thumb.png などを自動で使います）。</small>
+        </label>
+        <label>PV動画（任意）
+          <input type="file" name="video" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v">
+          <small>mp4 がおすすめ（40MB まで）。大きい動画は YouTube や TikTok に上げて、下に URL を入れてください。</small>
+        </label>
+        <label>または PV の URL（YouTube / TikTok）
+          <input type="text" name="videoUrl" inputmode="url" placeholder="https://www.youtube.com/watch?v=… / https://www.tiktok.com/@…/video/…">
+        </label>
+        <label>タイトル <em>必須</em><input type="text" name="title" required maxlength="40" placeholder="例：PIXEL QUEST"></label>
+        <label>ジャンル
+          <input type="text" name="genre" list="genre-list" maxlength="20" placeholder="例：アクション">
+          <datalist id="genre-list"><option value="アクション"><option value="パズル"><option value="RPG"><option value="シューティング"><option value="アドベンチャー"><option value="アクションRPG"><option value="カジュアル"></datalist>
+        </label>
+        <label>ひとこと紹介<input type="text" name="summary" maxlength="80" placeholder="一覧に出る短い紹介文"></label>
+        <label>くわしい紹介<textarea name="description" rows="3" maxlength="600" placeholder="詳細ページに出る紹介文（なくてもOK）"></textarea></label>
+        <label>PCの操作<input type="text" name="pc" maxlength="80" placeholder="例：矢印キーで移動、Zでジャンプ"></label>
+        <label>スマホの操作<input type="text" name="mobile" maxlength="80" placeholder="例：画面の左右をタップ"></label>
+        <fieldset class="radio">
+          <legend>公開状態 <em>必須</em></legend>
+          <label><input type="radio" name="status" value="released" required> 公開中（すぐ遊べる）</label>
+          <label><input type="radio" name="status" value="development"> 開発中（一覧に出すだけ）</label>
+        </fieldset>
+        <button class="btn btn--start" type="submit" data-add-btn>追加してサイトに反映</button>
+      </form>
+    </section>
+
+    <section class="pxwin admin-box">
+      <h2 class="admin-h">登録中のゲーム</h2>
+      <div class="admin-games" data-games><p class="muted">読み込み中…</p></div>
+    </section>
+
+    <section class="pxwin admin-box">
+      <h2 class="admin-h">サイト本体を更新</h2>
+      <p class="muted" style="margin-top:0">デザインや文章を変えた新しいサイトの zip をここから入れます。登録中のゲームとゲーム一覧はそのまま残ります。<br>はじめて使うとき（リポジトリが空のとき）は、ここからサイト一式を入れます。</p>
+      <form data-site-form class="admin-form">
+        <label>サイトの zip<input type="file" name="site" accept=".zip,application/zip" required></label>
+        <button class="btn btn--purple" type="submit">サイトを更新</button>
+      </form>
+    </section>
+  </div>
+</main>
+
+<!-- progress / confirm dialog -->
+<div class="modal" data-modal hidden>
+  <div class="pxwin modal__box">
+    <h2 class="admin-h" data-modal-title></h2>
+    <div data-modal-body></div>
+    <div class="progress" data-progress hidden><i data-progress-bar></i></div>
+    <p class="modal__log" data-modal-log></p>
+    <div class="modal__btns" data-modal-btns></div>
+  </div>
+</div>
+<noscript><p style="text-align:center;padding:20px">管理ページの利用には JavaScript を有効にしてください。</p></noscript>
+</body>
+</html>

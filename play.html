@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PLAY | QUVERIS GAMES</title>
+<meta name="description" content="QUVERIS のゲームをプレイ">
+<meta name="theme-color" content="#03060f">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="QUVERIS">
+<meta property="og:title" content="PLAY | QUVERIS GAMES">
+<meta property="og:description" content="QUVERIS のゲームをプレイ">
+<meta property="og:image" content="assets/img/ogp.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="assets/css/style.css?v=11">
+<script src="assets/js/app.js?v=11" defer></script>
+</head>
+<body data-page="play" class="play-page">
+<div class="play-bar">
+  <a class="play-bar__back" href="games.html" data-back aria-label="詳細ページへ戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+  <div class="play-bar__title" data-title><b>LOADING…</b><small>QUVERIS GAMES</small></div>
+  <div class="play-bar__tools" data-tools>
+    <button class="icon-btn" type="button" data-reload aria-label="リスタート"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg><span class="lbl">RESTART</span></button>
+    <a class="icon-btn" href="#" target="_blank" rel="noopener" data-standalone aria-label="単独ページで開く"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></svg><span class="lbl">NEW TAB</span></a>
+    <button class="icon-btn icon-btn--primary" type="button" data-fs aria-label="全画面表示"></button>
+  </div>
+</div>
+<div class="stage" data-stage>
+  <button class="icon-btn fs-exit" type="button" data-fs-exit aria-label="全画面を終了"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div class="stage__overlay" data-overlay><div class="box"><div class="loader"><i></i><i></i><i></i><i></i></div><h2>LOADING</h2></div></div>
+  <span class="rotate-hint">↻ 横向きにするとより快適に遊べます</span>
+</div>
+<noscript><p style="text-align:center;padding:20px">ゲームの再生には JavaScript を有効にしてください。</p></noscript>
+</body>
+</html>

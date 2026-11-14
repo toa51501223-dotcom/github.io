@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<!-- 新しいゲームのひな形。このフォルダをコピーして games/<ゲームID>/ に置いてください -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>NEW GAME | QUVERIS</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #03060f; color: #e8edf8;
+    touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent; font-family: ui-monospace, Menlo, monospace; }
+  canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+  // 必ず相対パスで画像・音声を読み込み、失敗しても止まらないようにする例
+  function loadImage(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => { console.warn("image failed:", src); resolve(null); };
+      img.src = src;
+    });
+  }
+  const canvas = document.getElementById("game"), ctx = canvas.getContext("2d");
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener("resize", resize); resize();
+  (function loop() {
+    ctx.fillStyle = "#03060f"; ctx.fillRect(0, 0, innerWidth, innerHeight);
+    ctx.fillStyle = "#81f5c4"; ctx.font = "700 20px monospace"; ctx.textAlign = "center";
+    ctx.fillText("NEW GAME", innerWidth / 2, innerHeight / 2);
+    requestAnimationFrame(loop);
+  })();
+</script>
+</body>
+</html>

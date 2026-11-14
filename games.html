@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ゲーム一覧 | QUVERIS GAMES</title>
+<meta name="description" content="QUVERIS が制作したゲームの一覧。公開中のタイトルはブラウザで無料プレイできます。">
+<meta name="theme-color" content="#0b1030">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="QUVERIS">
+<meta property="og:title" content="ゲーム一覧 | QUVERIS GAMES">
+<meta property="og:description" content="QUVERIS が制作したゲームの一覧。公開中のタイトルはブラウザで無料プレイできます。">
+<meta property="og:image" content="assets/img/ogp.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="assets/css/style.css?v=11">
+<script src="assets/js/app.js?v=11" defer></script>
+</head>
+<body data-page="list">
+<a class="skip-link" href="#main">本文へスキップ</a>
+<header data-site-header class="site-header"></header>
+<main id="main">
+
+<div class="wrap">
+  <div class="page-head">
+    <nav class="crumbs" aria-label="パンくず"><a href="./">TOP</a><span aria-hidden="true">/</span><span>GAMES</span></nav>
+    <h1>ALL GAMES</h1>
+    <p>QUVERIS が制作したゲームの一覧です。公開中のタイトルは、そのままブラウザで無料プレイできます。</p>
+  </div>
+  <div class="toolbar">
+    <div class="seg" role="group" aria-label="公開状態で絞り込み" data-status-filter>
+      <button type="button" data-value="all" aria-pressed="true">ALL</button>
+      <button type="button" data-value="released" aria-pressed="false">公開中</button>
+      <button type="button" data-value="development" aria-pressed="false">開発中</button>
+    </div>
+    <label class="sr-only" for="genre">ジャンル</label>
+    <select id="genre" class="select" data-genre><option value="all">すべてのジャンル</option></select>
+    <label class="sr-only" for="q">キーワード検索</label>
+    <input id="q" class="search" type="search" placeholder="タイトル・タグで検索" data-search autocomplete="off">
+    <span class="result-count" data-count></span>
+  </div>
+  <div class="game-grid" data-grid></div>
+</div>
+</main>
+<footer data-site-footer class="site-footer"></footer>
+<noscript><p style="text-align:center;padding:20px">このサイトの表示には JavaScript を有効にしてください。</p></noscript>
+</body>
+</html>

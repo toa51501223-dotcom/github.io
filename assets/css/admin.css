@@ -1,0 +1,80 @@
+/* QUVERIS admin page */
+.admin { max-width: 760px; padding-bottom: 80px; }
+.admin-box { padding: 22px clamp(16px, 4vw, 28px) 26px; margin: 4px 4px 32px; }
+.admin-h { font-family: var(--font-pixel); font-weight: 400; font-size: 14px; color: var(--yellow); margin: 0 0 14px; line-height: 1.6; }
+.admin-form { display: grid; gap: 16px; }
+.admin-form label { display: grid; gap: 6px; font-size: 15px; }
+.admin-form em { font-style: normal; font-size: 12px; color: var(--pink); margin-left: 6px; }
+.admin-form small { color: var(--dim); font-size: 13px; line-height: 1.6; }
+.admin-form code { color: var(--mint); }
+.admin-form input[type="text"], .admin-form input[type="password"], .admin-form textarea, .admin-form input[type="file"] {
+  width: 100%; background: var(--ink); color: var(--text); border: 0; border-radius: 0; padding: 10px 12px; min-height: 46px;
+  font-family: var(--font); font-size: 16px; box-shadow: inset 0 0 0 2px #2b3474; -webkit-appearance: none; appearance: none;
+}
+.admin-form textarea { resize: vertical; min-height: 84px; }
+.admin-form input:focus, .admin-form textarea:focus { outline: none; box-shadow: inset 0 0 0 2px var(--mint); }
+.admin-form input[type="file"] { padding: 10px; font-size: 14px; }
+.admin-form input[type="file"]::file-selector-button {
+  font-family: var(--font); font-size: 14px; margin-right: 12px; border: 0; padding: 6px 12px; background: var(--mint); color: var(--mint-ink); cursor: pointer;
+}
+.admin-form .check { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+.admin-form .btn { justify-self: start; }
+.radio { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.radio legend { font-size: 15px; margin-bottom: 6px; padding: 0; }
+.radio label { display: flex; align-items: center; gap: 10px; background: var(--ink); padding: 10px 12px; box-shadow: inset 0 0 0 2px #2b3474; cursor: pointer; }
+.radio label:has(input:checked) { box-shadow: inset 0 0 0 2px var(--mint); }
+input[type="radio"], input[type="checkbox"] { accent-color: var(--mint); width: 18px; height: 18px; margin: 0; }
+
+.howto { margin-top: 20px; font-size: 14px; }
+.howto summary { cursor: pointer; color: var(--mint); }
+.howto ol { padding-left: 1.4em; line-height: 1.9; }
+
+.site-list { display: grid; gap: 10px; }
+.site-list button { text-align: left; justify-content: flex-start; }
+
+.admin-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 4px 24px; font-size: 14px; color: var(--muted); }
+.admin-bar b { color: var(--text); }
+.admin-bar__btns { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.admin-games { display: grid; gap: 14px; }
+.admin-game { display: grid; grid-template-columns: 112px 1fr; gap: 14px; align-items: center; padding: 10px; background: var(--ink); box-shadow: inset 0 0 0 2px #2b3474; }
+.admin-game__thumb { aspect-ratio: 16/9; background: var(--panel); overflow: hidden; }
+.admin-game__thumb img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.admin-game__thumb .thumb-fallback { font-size: 8px; padding: 4px; }
+.admin-game__title { font-family: var(--font-pixel); font-size: 12px; line-height: 1.6; margin: 0 0 4px; word-break: break-all; }
+.admin-game__meta { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.admin-game__btns { grid-column: 1 / -1; display: flex; gap: 4px; flex-wrap: wrap; }
+.admin-game__btns .btn { flex: 1 1 120px; }
+.btn--danger { --b-bg: #ff6b8a; --b-fg: #2a0610; }
+.btn--danger:hover { --b-bg: #ff8fa6; }
+@media (min-width: 620px) { .admin-game { grid-template-columns: 140px 1fr auto; } .admin-game__btns { grid-column: auto; flex-direction: column; } }
+
+.modal { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 20px; background: rgba(5,7,22,.82); }
+.modal[hidden] { display: none; }
+.modal__box { width: min(100%, 480px); padding: 24px 22px; max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain; }
+.modal__box p { margin: 0 0 12px; }
+.modal__log { color: var(--muted); font-size: 14px; min-height: 1.5em; white-space: pre-line; }
+.modal__btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
+.progress { height: 20px; background: var(--ink); box-shadow: inset 0 0 0 2px #2b3474; padding: 4px; margin: 6px 0 12px; }
+.progress i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(90deg, var(--mint) 0 8px, transparent 8px 10px); transition: width .2s steps(4); }
+
+.admin-cmts { display: grid; gap: 10px; }
+.admin-cmt { background: var(--ink); box-shadow: inset 0 0 0 2px #2b3474; padding: 12px 14px; display: grid; gap: 6px; }
+.admin-cmt.is-pub { box-shadow: inset 0 0 0 2px var(--mint-dark); }
+.admin-cmt__head { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 13px; color: var(--muted); }
+.admin-cmt__head b { color: var(--mint); font-weight: 400; }
+.admin-cmt p { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 15px; }
+.admin-cmt__btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.admin-cmt__btns .btn { flex: 1 1 110px; }
+.admin-cmts h3 { font-size: 13px; color: var(--yellow); margin: 10px 0 0; font-weight: 400; }
+.admin-note { font-size: 14px; color: var(--muted); background: var(--ink); padding: 12px 14px; box-shadow: inset 0 0 0 2px var(--purple-dark); }
+.admin-note ol { margin: 6px 0 0; padding-left: 1.3em; }
+
+.ng-edit { margin: 0 0 14px; font-size: 14px; }
+.ng-edit summary { cursor: pointer; color: var(--mint); }
+.ng-edit textarea { width: 100%; background: var(--ink); color: var(--text); border: 0; border-radius: 0; padding: 10px 12px; font-family: var(--font); font-size: 16px; box-shadow: inset 0 0 0 2px #2b3474; resize: vertical; }
+.admin-cmt.is-ng { box-shadow: inset 0 0 0 2px var(--pink); }
+.ng-flag { color: var(--pink); font-size: 13px; }
+.ng-hidden { position: relative; }
+.ng-hidden p { filter: blur(6px); user-select: none; pointer-events: none; }
+.ng-hidden button { position: absolute; inset: 0; width: 100%; background: transparent; border: 0; color: var(--pink); font-family: var(--font); font-size: 14px; cursor: pointer; text-shadow: 0 0 6px var(--ink), 0 0 2px var(--ink); }
