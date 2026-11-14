@@ -7,7 +7,7 @@
  * entry : ゲーム本体の相対パス（games/<id>/index.html）
  * video : PV（games/<id>/pv.mp4 または YouTube / TikTok の URL）
  * links : 外部公開先 [{ label: "itch.io", url: "https://..." }]
- * 最終更新: 2026-11-14T06:08:27.415Z
+ * 最終更新: 2026-11-14T06:08:41.242Z
  * ===================================================================== */
 
 window.QUVERIS_SITE = {
@@ -53,30 +53,6 @@ window.QUVERIS_GAMES = [
     ],
     "version": "1.3.0",
     "updated": "2026-11-13",
-    "links": []
-  },
-  {
-    "id": "mint-drift",
-    "title": "MINT DRIFT",
-    "genre": "アクション",
-    "summary": "降り注ぐ紫の破片をかわし、ミントの光を集め続けるスコアアタック。",
-    "description": "QUVERISの信号空間を漂う小さな機体を操り、降り注ぐ紫の破片をかわしながらミントの光を集めるスコアアタック。\n光を連続で取るとコンボ倍率が上がり、時間とともに破片の密度とスピードが上がっていきます。1プレイ1〜3分、何度でも挑戦できます。",
-    "status": "released",
-    "entry": "games/mint-drift/index.html",
-    "thumbnail": "games/mint-drift/thumb.png",
-    "accent": "mint",
-    "orientation": "any",
-    "controls": {
-      "pc": "マウス移動 / ← → ↑ ↓ / WASD で移動、P または Esc で一時停止",
-      "mobile": "画面をドラッグして移動（指の少し上に機体が来ます）"
-    },
-    "tags": [
-      "スコアアタック",
-      "回避",
-      "1分で遊べる"
-    ],
-    "version": "1.0.0",
-    "updated": "2026-11-12",
     "links": []
   }
 ];
