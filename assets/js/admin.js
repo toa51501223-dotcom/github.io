@@ -283,6 +283,7 @@ window.QUVERIS_GAMES = ${JSON.stringify(reg.games, null, 2)};
     $("[data-games]").innerHTML = '<p class="muted">読み込み中…</p>';
     await loadRegistry();
     renderGames();
+    loadComments();
   }
 
   /* ------------------------------------------------------------ list */
@@ -628,6 +629,148 @@ window.QUVERIS_GAMES = ${JSON.stringify(reg.games, null, 2)};
   });
 
 
+  /* ------------------------------------------------------------ comments (Cloudflare Pages Functions) */
+  const C = { pending: [], published: [], ok: false };
+  /* NG words: flag & hide comments that contain them (stored on this device) */
+  const NG_DEFAULT = ["死ね", "しね", "氏ね", "殺す", "ころす", "消えろ", "きえろ", "くたばれ", "クソ", "糞", "ゴミ", "カス", "ブス", "キモい", "きもい", "キモ", "うざい", "ウザ", "馬鹿", "バカ", "アホ", "ガイジ", "池沼", "やめちまえ", "才能ない", "センスない", "下手くそ", "へたくそ"];
+  const normJa = (t) => String(t || "").normalize("NFKC").toLowerCase().replace(/[\u30a1-\u30f6]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60)).replace(/[\s・。、!！?？ー~〜]/g, "");
+  function ngWords() {
+    try { const v = localStorage.getItem("quveris.admin.ng"); if (v !== null) return v.split("\n").map((x) => x.trim()).filter(Boolean); } catch (_) {}
+    return NG_DEFAULT.slice();
+  }
+  function ngCheck(text) {
+    const n = normJa(text);
+    const hits = ngWords().filter((w) => n.includes(normJa(w)));
+    const reasons = [];
+    if (hits.length) reasons.push("NGワード");
+    if (/https?:\/\/|www\./i.test(text)) reasons.push("URL");
+    if (/[\w.+-]+@[\w-]+\.[\w.]+/.test(text)) reasons.push("メールアドレス");
+    if (/0\d{1,4}[-\s]?\d{1,4}[-\s]?\d{3,4}/.test(String(text).normalize("NFKC"))) reasons.push("電話番号");
+    return reasons;
+  }
+  const ngBox = $("[data-ng-words]");
+  ngBox.value = ngWords().join("\n");
+  $("[data-ng-save]").addEventListener("click", () => {
+    try { localStorage.setItem("quveris.admin.ng", ngBox.value); } catch (_) {}
+    renderComments();
+    modal.open("NGワード"); modal.body("<p>保存しました。</p>"); modal.buttons([{ label: "OK", onClick: () => modal.close() }]);
+  });
+  $("[data-ng-reset]").addEventListener("click", () => {
+    try { localStorage.removeItem("quveris.admin.ng"); } catch (_) {}
+    ngBox.value = NG_DEFAULT.join("\n");
+    renderComments();
+  });
+
+  const gameTitle = (id, fallback) => ((S.registry && S.registry.games.find((g) => g.id === id)) || {}).title || fallback || id || "-";
+  const fmtD = (d) => { try { return new Date(d).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (_) { return ""; } };
+  const cmtApi = () => siteBase() + "api/admin/comments";
+  async function cmtCall(method, body) {
+    let res;
+    try {
+      res = await fetch(cmtApi(), {
+        method, cache: "no-store",
+        headers: Object.assign({ Authorization: "Bearer " + S.token }, body ? { "Content-Type": "application/json" } : {}),
+        body: body ? JSON.stringify(body) : undefined
+      });
+    } catch (_) { throw new ApiError("サイトの感想機能と通信できませんでした。", 0); }
+    if (res.status === 503) throw new ApiError("not-configured", 503);
+    if (res.status === 403) throw new ApiError("感想の管理を確認できませんでした。いちばん下の「サイト本体を更新」で最新の zip を入れてから、もう一度お試しください。", 4031);
+    if (!res.ok) throw new ApiError("unavailable", res.status);
+    return res.json();
+  }
+  async function loadComments() {
+    const box = $("[data-cmts]");
+    box.innerHTML = '<p class="muted">読み込み中…</p>';
+    $("[data-cmt-all]").hidden = true;
+    try {
+      const d = await cmtCall("GET");
+      C.pending = d.pending || []; C.published = d.published || []; C.ok = true;
+      renderComments();
+    } catch (err) {
+      C.ok = false;
+      $("[data-cmt-summary]").textContent = "感想の受付がまだ有効になっていません";
+      if (err.status === 503) {
+        box.innerHTML = `<div class="admin-note">感想を受け付けるには、Cloudflare で一度だけ設定が必要です。
+          <ol><li>Cloudflare の左メニュー「ストレージとデータベース」→「KV」→「作成」で、名前を <b>quveris-comments</b> にして作る</li>
+          <li>「Workers & Pages」→ このサイトのプロジェクト →「設定」→「バインディング」→「追加」→「KV 名前空間」</li>
+          <li>変数名を <b>COMMENTS</b>、名前空間に <b>quveris-comments</b> を選んで保存</li>
+          <li>この管理ページの「サイト本体を更新」で最新の zip をもう一度入れる（反映のため）</li></ol></div>`;
+      } else if (err.status === 4031) {
+        box.innerHTML = `<p class="muted">${esc(err.message)}</p>`;
+      } else {
+        box.innerHTML = '<p class="muted">このサイトでは感想機能が使えません（Cloudflare Pages で公開しているときに使えます）。</p>';
+      }
+    }
+  }
+  function cmtCard(c, pub) {
+    const ng = ngCheck((c.name || "") + " " + c.text);
+    const body = ng.length
+      ? `<div class="ng-hidden"><p>${esc(c.text)}</p><button type="button" data-ng-show>⚠ ${esc(ng.join("・"))}を含む感想（タップで表示）</button></div>`
+      : `<p>${esc(c.text)}</p>`;
+    return `<div class="admin-cmt${pub ? " is-pub" : ""}${ng.length ? " is-ng" : ""}" data-cid="${esc(c.id)}" data-game="${esc(c.game)}">
+      <div class="admin-cmt__head"><b>${esc(ng.includes("NGワード") ? "（非表示）" : (c.name || "名無しのプレイヤー"))}</b><span>${esc(gameTitle(c.game, c.gameTitle))}</span><span>${esc(fmtD(c.date))}</span>${pub ? '<span class="status status--released">公開中</span>' : '<span class="status status--development">未公開</span>'}${ng.length ? '<span class="ng-flag">⚠ 要確認</span>' : ""}</div>
+      ${body}
+      <div class="admin-cmt__btns">
+        ${pub ? '<button class="btn btn--sm btn--ghost" type="button" data-cact="unpublish">非公開にする</button>' : '<button class="btn btn--sm" type="button" data-cact="publish">公開</button>'}
+        <button class="btn btn--sm btn--danger" type="button" data-cact="delete">削除</button>
+      </div></div>`;
+  }
+  function renderComments() {
+    if (!C.ok) return;
+    const pending = C.pending.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    const pub = C.published.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    $("[data-cmt-summary]").textContent = `未公開 ${pending.length} 件 ／ 公開中 ${pub.length} 件`;
+    $("[data-cmt-all]").hidden = pending.filter((c) => !ngCheck((c.name || "") + " " + c.text).length).length < 2;
+    $("[data-cmts]").innerHTML = (pending.length ? "<h3>届いた感想（未公開）</h3>" + pending.map((c) => cmtCard(c, false)).join("") : '<p class="muted">新しい感想はまだありません。</p>') +
+      (pub.length ? "<h3>公開中</h3>" + pub.map((c) => cmtCard(c, true)).join("") : "");
+  }
+  async function cmtAction(body, title, done) {
+    S.busy = true;
+    modal.open(title);
+    modal.progress(40, "反映しています…");
+    try {
+      await cmtCall("POST", body);
+      modal.progress(100, "完了しました！");
+      modal.body(`<p>${done}</p>`);
+      modal.buttons([{ label: "OK", onClick: () => modal.close() }]);
+      await loadComments();
+    } finally { S.busy = false; }
+  }
+  $("[data-cmts]").addEventListener("click", async (e) => {
+    const show = e.target.closest("[data-ng-show]");
+    if (show) {
+      const wrap = show.closest(".ng-hidden");
+      const card = show.closest("[data-cid]");
+      const c = C.pending.concat(C.published).find((x) => x.id === card.dataset.cid);
+      if (c) card.querySelector(".admin-cmt__head b").textContent = c.name || "名無しのプレイヤー";
+      wrap.replaceWith(Object.assign(document.createElement("p"), { textContent: wrap.querySelector("p").textContent }));
+      return;
+    }
+    const btn = e.target.closest("[data-cact]");
+    if (!btn || S.busy) return;
+    const card = btn.closest("[data-cid]");
+    const id = card.dataset.cid, game = card.dataset.game, act = btn.dataset.cact;
+    try {
+      if (act === "publish") await cmtAction({ action: "publish", id }, "感想を公開しています", "感想を公開しました！");
+      else if (act === "unpublish") await cmtAction({ action: "unpublish", id, game }, "非公開にしています", "感想を非公開にしました。（「届いた感想」に戻ります）");
+      else if (act === "delete") {
+        const ok = await modal.confirm("感想を削除", '<p>この感想を削除しますか？<br><span class="muted">元に戻せません。</span></p>', "削除する", "btn--danger");
+        if (ok) await cmtAction({ action: "delete", id, game: card.classList.contains("is-pub") ? game : "" }, "感想を削除しています", "感想を削除しました。");
+      }
+    } catch (err) { S.busy = false; handleError(err); }
+  });
+  $("[data-cmt-all]").addEventListener("click", async () => {
+    if (S.busy) return;
+    const ids = C.pending.filter((c) => !ngCheck((c.name || "") + " " + c.text).length).map((c) => c.id);
+    const skipped = C.pending.length - ids.length;
+    if (!ids.length) { modal.error("まとめて公開できる感想がありません（⚠ の付いた感想は、ひとつずつ確認してください）。"); return; }
+    const ok = await modal.confirm("まとめて公開", `<p>未公開の感想 ${ids.length} 件を公開しますか？${skipped ? `<br><span class="muted">⚠ の付いた ${skipped} 件は含めません。</span>` : ""}</p>`, "公開する");
+    if (!ok) return;
+    try { await cmtAction({ action: "publishMany", ids }, "感想を公開しています", `${ids.length} 件の感想を公開しました！`); }
+    catch (err) { S.busy = false; handleError(err); }
+  });
+  $("[data-cmt-reload]").addEventListener("click", () => { if (!S.busy) loadComments(); });
+
   /* ------------------------------------------------------------ site update / first install */
   async function readSiteZip(file, install) {
     if (!/\.zip$/i.test(file.name)) throw new ApiError("サイトのファイルは .zip を選んでください。", 0);
@@ -654,6 +797,8 @@ window.QUVERIS_GAMES = ${JSON.stringify(reg.games, null, 2)};
     if (!names.has("/admin.html") || !names.has("/assets/js/admin.js"))
       throw new ApiError("この zip には管理ページが入っていません。このまま更新すると管理ページが消えてしまうため、中止しました。", 0);
     if (!names.has("/.nojekyll")) files.push({ path: "/.nojekyll", blob: new Blob([""]) });
+    // tells the comments API which repository's owner may moderate
+    files.push({ path: "/quveris.config.json", blob: new Blob([JSON.stringify({ repo: S.repo.full }, null, 2)], { type: "application/json" }) });
     return files;
   }
 

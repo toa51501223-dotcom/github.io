@@ -184,6 +184,7 @@
     return `<button type="button" class="pv-lite" data-pv-embed="${v.kind}:${esc(v.id)}" ${bg} aria-label="${esc(g.title)} のPVを再生"><span class="pv-lite__btn">▶ PVを見る</span><span class="pv-lite__src">${v.kind === "youtube" ? "YouTube" : "TikTok"}</span></button>`;
   }
   function wirePlayer(root, g) {
+    if (!root) return; // no PV for this game
     const vid = root.querySelector("[data-pv-file]");
     if (vid) {
       vid.addEventListener("error", () => {
@@ -209,13 +210,14 @@
   }
 
   /* ------------------------------------------------------------ comments */
-  async function loadComments() {
+  // Returns null when the comments API isn't available on this host (section is then hidden).
+  async function loadComments(game) {
     try {
-      const res = await fetch("comments.json?ts=" + Date.now(), { cache: "no-store" });
-      if (!res.ok) return [];
+      const res = await fetch("api/comments?game=" + encodeURIComponent(game), { cache: "no-store" });
+      if (!res.ok) return null;
       const data = await res.json();
-      return Array.isArray(data.comments) ? data.comments : [];
-    } catch (_) { return []; }
+      return Array.isArray(data.comments) ? data.comments : null;
+    } catch (_) { return null; }
   }
   const fmtDate = (d) => { try { const t = new Date(d); return `${t.getFullYear()}.${pad(t.getMonth() + 1)}.${pad(t.getDate())}`; } catch (_) { return ""; } };
   function commentItem(c) {
@@ -241,10 +243,13 @@
           <p class="cmt-form__msg" data-cmt-msg role="status"></p>
         </form>
       </div>`;
+    sec.hidden = true;
     root.appendChild(sec);
     const list = sec.querySelector("[data-cmt-list]");
-    loadComments().then((all) => {
-      const mine = all.filter((c) => c.game === g.id).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    loadComments(g.id).then((mine) => {
+      if (!mine) return; // comments not available here
+      sec.hidden = false;
+      mine.sort((a, b) => String(b.date).localeCompare(String(a.date)));
       list.innerHTML = mine.length ? mine.map(commentItem).join("") : '<li class="cmt cmt--empty">まだ感想はありません。最初の感想を書いてみませんか？</li>';
     });
     const form = sec.querySelector("[data-cmt-form]");
@@ -261,11 +266,15 @@
       const btn = form.querySelector("button");
       btn.disabled = true; msg.textContent = "送信中…";
       try {
-        const body = new URLSearchParams({
-          "form-name": "comment", game: g.id, "game-title": g.title,
-          name: form.elements.namedItem("name").value.trim().slice(0, 20), comment: text.slice(0, 300), "bot-field": form.elements.namedItem("bot-field").value
+        const res = await fetch("api/comments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            game: g.id, "game-title": g.title,
+            name: form.elements.namedItem("name").value.trim().slice(0, 20), comment: text.slice(0, 300), "bot-field": form.elements.namedItem("bot-field").value
+          })
         });
-        const res = await fetch("__forms.html", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body.toString() });
+        if (res.status === 429) { msg.textContent = "続けて送るときは、1分ほど待ってからお願いします。"; return; }
         if (!res.ok) throw new Error(String(res.status));
         try { localStorage.setItem("quveris.lastComment", String(Date.now())); } catch (_) {}
         form.reset(); sec.querySelector("[data-cmt-count]").textContent = "0 / 300";
@@ -404,6 +413,7 @@
           </div>
         </div>`;
       wirePlayer($("[data-media]"), g);
+      mountComments(root, g);
       const shareBtn = $("[data-share]");
       if (shareBtn) {
         shareBtn.addEventListener("click", async () => {

@@ -82,3 +82,18 @@ GitHub のリポジトリを Cloudflare Pages につなぐと、管理ページ�
 - スマホ対応のため `<meta name="viewport" …>` と `touch-action: none;` を入れる（`games/_template` 参照）
 - 音は最初のタップ／クリックのあとに鳴らす（iPhone の制限）
 - `localStorage` は `try { … } catch {}` で囲む
+
+---
+
+## プレイの感想（Cloudflare Pages のときだけ）
+
+各ゲームのページに感想フォームがあります。届いた感想は管理ページの「プレイの感想」に並び、「公開」したものだけが表示されます。NGワード・URL・電話番号などを含むものには ⚠ が付きます。
+
+最初に一度だけ、Cloudflare で感想の保存場所（KV）をつなぎます。
+1. Cloudflare の「ストレージとデータベース」→「KV」→「作成」で `quveris-comments` を作る
+2. 「Workers & Pages」→ このサイトのプロジェクト →「設定」→「バインディング」→「追加」→「KV 名前空間」
+3. 変数名 `COMMENTS`、名前空間 `quveris-comments` を選んで保存
+4. 管理ページの「サイト本体を更新」で最新の zip を入れる（反映のため）
+
+仕組み：`functions/api/` が感想を受け取る小さなサーバー機能です（Cloudflare Pages Functions）。管理者かどうかは、管理ページの GitHub トークンがこのリポジトリに書き込めるかで確認します（`quveris.config.json` にリポジトリ名が入ります）。
+GitHub Pages で公開している場合、感想欄は自動で非表示になります。
