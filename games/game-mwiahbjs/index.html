@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>エルディア館</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 静かで不穏な、夜の洋館。 IDEA: 古い館の真鍮のプレートと羊皮紙の手帳。
+   PICTURE: ゲーム画面そのもの。 COLOUR: 墨紫の夜 / 真鍮金 / 蝋燭の橙。
+   TYPE: DotGothic16 一書体。 LAYOUT: 全画面キャンバス＋縁取りUI */
+:root{color-scheme:dark;--ink:#f3e8cf;--dim:#b9ab8c;--gold:#d8b25a;--gold2:#8c6a2a;--night:#0b0812;--panel:#16101ecc;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px)}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;background:var(--night);color:var(--ink);overflow:hidden;
+  font:16px/1.6 "DotGothic16","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#game{position:fixed;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;display:block}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.frame{background:linear-gradient(#1c1426f0,#120c18f0);border:2px solid var(--gold2);box-shadow:0 0 0 2px #000,inset 0 0 0 1px #ffffff14,0 10px 30px #000a;border-radius:4px}
+
+/* HUD */
+#hud{position:fixed;left:calc(10px + var(--sl));top:calc(10px + var(--st));display:flex;flex-direction:column;gap:6px;align-items:flex-start;pointer-events:none;z-index:5;max-width:calc(100vw - 330px - var(--sl) - var(--sr))}
+#hud .plate{max-width:100%;min-width:0;flex-wrap:wrap;row-gap:0}
+#hudObj{display:none;padding:5px 12px 6px;font-size:14px;line-height:1.45;max-width:100%;color:#f6e7b8;background:rgba(24,18,30,.88)}
+#hudObj.show{display:block}#hudObj::before{content:"目的　";color:var(--gold);font-size:12px}
+#hudObj.pulse{animation:objp 1.4s ease}@keyframes objp{0%{box-shadow:0 0 0 #e8c87800}30%{box-shadow:0 0 14px #e8c878aa}100%{box-shadow:0 0 0 #e8c87800}}
+#dlgName{display:none;position:absolute;top:-15px;left:62px;padding:2px 12px;font-size:14px;color:#1a1420;background:#e8c878;border-radius:4px;letter-spacing:.05em}
+#dlgName.show{display:block}#dlgName.right{left:auto;right:62px}
+/* 会話の顔：会話枠の上（枠の外）に置き、文字に重ならないようにする */
+.vn{display:none;position:absolute;bottom:calc(100% + 14px);width:136px;height:136px;image-rendering:auto;pointer-events:none;transition:filter .2s,transform .2s;filter:drop-shadow(0 4px 10px #000c);transform-origin:bottom center}
+.vn.show{display:block}.vn.dim{filter:brightness(.45) drop-shadow(0 4px 10px #000c);transform:scale(.92)}
+#vnL{left:6px}#vnR{right:6px}
+@media (pointer:coarse){.vn{width:84px;height:84px;bottom:calc(100% + 12px)}}
+@media (max-height:430px){.vn{width:72px;height:72px}}
+#dlgFace{display:none;position:absolute;left:10px;top:-46px;width:50px;height:45px;image-rendering:pixelated;background:#1a1420;border:2px solid #e8c878;border-radius:6px}
+#dlgFace.show{display:block}
+#hud .plate{padding:4px 12px 5px;display:flex;gap:10px;align-items:baseline}
+#hudArea{font-size:13px;color:var(--ac,var(--gold));white-space:nowrap}
+#hudArea::before{content:"";display:inline-block;width:8px;height:8px;margin-right:6px;background:var(--ac,var(--gold));box-shadow:0 0 6px var(--ac)}
+#hudRoom{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#hudTime{font-size:14px;color:var(--dim);white-space:nowrap;font-variant-numeric:tabular-nums}
+#hudBtns{position:fixed;right:calc(10px + var(--sr));top:calc(10px + var(--st));display:flex;gap:8px;z-index:5}
+#hudBtns button{min-width:48px;height:44px;padding:0 12px;font-size:15px}
+#hudBtns kbd{font:12px inherit;color:var(--dim);margin-left:4px}
+
+/* タッチ操作：左下の固定スティック／右側のボタン */
+#stick{position:fixed;left:calc(18px + var(--sl));bottom:calc(18px + var(--sb));width:128px;height:128px;border-radius:50%;z-index:6;display:none;touch-action:none;
+  background:radial-gradient(circle,#0000 0 52%,#d8b25a22 53% 55%,#0000 56%),radial-gradient(circle,#1c1226aa,#0b0812cc);border:2px solid #d8b25a66;box-shadow:0 0 0 2px #000a}
+#stick::before,#stick::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-top:2px solid #d8b25a88;border-left:2px solid #d8b25a88}
+#stick::before{transform:translateY(-50px) rotate(45deg)}#stick::after{transform:translateY(50px) rotate(225deg)}
+#stickKnob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 40% 35%,#6a4c86,#2a1c38);border:2px solid var(--gold);box-shadow:0 4px 10px #000c;transition:transform .08s}
+#stick.act #stickKnob{transition:none;background:radial-gradient(circle at 40% 35%,#8a66aa,#3a2850)}
+#pad{position:fixed;right:calc(14px + var(--sr));bottom:calc(14px + var(--sb));width:168px;height:150px;z-index:6;display:none}
+#pad button{position:absolute;border-radius:50%;border:2px solid var(--gold2);background:radial-gradient(circle at 40% 35%,#3a2850,#160e1e);box-shadow:0 0 0 2px #000,0 5px 12px #000b;font-size:14px;padding:0;touch-action:none}
+#pad button:active:not(:disabled){transform:scale(.93);background:#5a3c72}
+#pad button:disabled{opacity:.35}
+#btnA{right:0;bottom:34px;width:84px;height:84px;font-size:17px;border-width:3px!important;border-color:var(--gold)!important}
+#btnA.hot{box-shadow:0 0 0 2px #000,0 0 0 5px #d8b25a55,0 0 18px #ffd76088;animation:hot 1.2s infinite}
+@keyframes hot{50%{box-shadow:0 0 0 2px #000,0 0 0 8px #d8b25a22,0 0 24px #ffd760aa}}
+#btnOk{right:92px;bottom:0;width:62px;height:62px}
+#btnCancel{right:96px;bottom:84px;width:56px;height:56px;font-size:12px!important}
+@media (pointer:coarse){#stick,#pad{display:block}#hudBtns kbd{display:none}.pc{display:none}}
+/* 画面（持ち物・手帳など）を開いている間は操作部を隠す（閉じるは各画面の✕／Esc） */
+body[data-mode=overlay] #stick,body[data-mode=overlay] #pad,body[data-mode=title] #stick,body[data-mode=title] #pad,body[data-mode=naming] #stick,body[data-mode=naming] #pad,body[data-mode=ending] #stick,body[data-mode=ending] #pad{visibility:hidden}
+@media (pointer:fine){.sp{display:none}}
+/* 使用中のアイテム */
+#armed{position:fixed;left:50%;top:calc(62px + var(--st));transform:translateX(-50%);z-index:6;padding:6px 14px;font-size:14px;color:#ffe7a0;display:none;max-width:calc(100% - 24px);text-align:center}
+#armed.show{display:block}
+/* 重要アイテム入手演出 */
+#reveal{position:fixed;inset:0;z-index:8;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none}
+#reveal.show{display:flex;animation:rev 2.6s ease forwards}
+#reveal::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,#ffe0a055 0,#0000 40%)}
+#revealArt{position:relative;filter:drop-shadow(0 0 18px #ffd760aa);animation:spin 2.6s ease}
+#revealArt canvas{image-rendering:pixelated;width:min(160px,30vh);height:min(160px,30vh)}
+#revealName{position:relative;font-size:22px;color:#fff3c8;text-shadow:0 2px 0 #000,0 0 14px #000}
+@keyframes rev{0%{opacity:0}12%,78%{opacity:1}100%{opacity:0}}
+@keyframes spin{0%{transform:scale(.4) rotate(-20deg)}25%{transform:scale(1.08)}35%,100%{transform:scale(1)}}
+
+/* 会話 */
+#dialog{position:fixed;left:50%;bottom:calc(14px + var(--sb));transform:translateX(-50%) translateY(16px);width:min(760px,calc(100% - 24px));
+  min-height:96px;padding:16px 22px 18px;font-size:18px;z-index:7;opacity:0;pointer-events:none;transition:.18s}
+#dialog.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
+/* タッチ（横持ち）：スティックとボタンの間に会話枠 */
+@media (pointer:coarse){#dialog{left:calc(158px + var(--sl));width:auto;right:calc(190px + var(--sr));transform:none;bottom:calc(10px + var(--sb));min-height:84px}#dialog.show{transform:none}}
+/* タッチ（縦持ち）：操作部の上に会話枠 */
+@media (pointer:coarse) and (orientation:portrait){#dialog{left:calc(10px + var(--sl));right:calc(10px + var(--sr));bottom:calc(176px + var(--sb))}}
+#dlgText{white-space:pre-wrap;line-height:1.7;text-wrap:pretty}
+#dlgText.get{color:#ffe7a0;display:flex;align-items:center;gap:10px}
+#dlgText .ico{width:32px;height:32px;image-rendering:pixelated;filter:drop-shadow(0 0 6px #ffd76088)}
+#dlgMore{position:absolute;right:16px;bottom:8px;color:var(--gold);animation:bob 1s infinite}
+@keyframes bob{50%{transform:translateY(3px)}}
+
+/* バナー・トースト */
+#banner{position:fixed;left:50%;top:22%;transform:translateX(-50%);text-align:center;pointer-events:none;opacity:0;z-index:4;text-shadow:0 2px 0 #000,0 0 18px #000;padding:10px 48px 12px;background:linear-gradient(90deg,transparent,#08060ce6 18%,#08060ce6 82%,transparent);border-top:1px solid #c9a35a55;border-bottom:1px solid #c9a35a55;white-space:nowrap}
+#banner small{display:block;font-size:14px;color:var(--gold)}
+#banner b{display:block;font-size:clamp(26px,5vw,40px);font-weight:400;line-height:1.1}
+#banner i{display:block;font-style:normal;font-size:13px;color:var(--dim);margin-top:4px}
+#banner.show{animation:ban 2.8s ease forwards}
+@keyframes ban{0%{opacity:0;transform:translate(-50%,8px)}15%,70%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+#toast{position:fixed;left:50%;top:calc(64px + var(--st));transform:translateX(-50%);padding:8px 16px;opacity:0;z-index:9;pointer-events:none}
+#toast.show{animation:ban 2.2s forwards}
+#fxOv{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:40}
+#deathScene{position:fixed;inset:0;z-index:59;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:pointer;transition:opacity .5s}
+#deathScene.show{display:flex}#deathScene.fade{opacity:0}
+#dsCanvas{width:min(100vw,calc((100vh - 90px) * 16 / 9));aspect-ratio:16/9;image-rendering:pixelated;border-top:1px solid #3a1010;border-bottom:1px solid #3a1010}
+#dsCap{margin:0;min-height:1.8em;color:#e8e0d4;font-size:clamp(14px,2.2vw,18px);letter-spacing:.08em;text-align:center;padding:0 16px}
+#dsCap.in{animation:opin 1.2s ease both}
+#opening{background:#000;z-index:58;display:none;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;transition:opacity .9s}
+#opening.show{display:flex;opacity:1}#opening.fade{opacity:0}#opening.short{background:#000}
+.oprain{position:absolute;inset:0;pointer-events:none;opacity:.35;background:repeating-linear-gradient(105deg,transparent 0 22px,#9ab4d055 22px 23px,transparent 23px 47px);background-size:200px 200px;animation:oprain .45s linear infinite}
+#opening.short .oprain{display:none}
+@keyframes oprain{to{background-position:-40px 200px}}
+#opLines{position:relative;width:min(640px,88vw);min-height:40vh;display:flex;flex-direction:column;justify-content:flex-end;gap:14px}
+#opLines p{margin:0;color:#e8e2d6;font-size:clamp(15px,2.2vw,19px);line-height:1.9;letter-spacing:.06em;animation:opin 1.6s ease both;text-shadow:0 0 12px #000}
+#opLines p.old{opacity:.32;transition:opacity 1.2s}
+@keyframes opin{from{opacity:0;transform:translateY(8px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+#opLines:empty{display:none}
+#opTitle{display:none;text-align:center;position:relative;margin-bottom:8vh}
+#opTitle.show{display:block;animation:optitle 3.4s ease both}
+#opNo{display:block;color:#c9a35a;letter-spacing:.6em;font-size:clamp(13px,1.8vw,16px);margin-bottom:10px}
+#opName{margin:0;color:#f3ead8;font-size:clamp(30px,6vw,54px);letter-spacing:.25em;font-weight:600;text-shadow:0 0 24px #c9a35a55}
+#opTitle i{display:block;width:0;height:1px;margin:16px auto;background:linear-gradient(90deg,transparent,#c9a35a,transparent);animation:opline 2s .6s ease forwards}
+#opSub{color:#a89a8c;font-size:13px;letter-spacing:.15em;margin:0}
+@keyframes optitle{0%{opacity:0;letter-spacing:.6em;filter:blur(6px)}30%{opacity:1;filter:none}85%{opacity:1}100%{opacity:.9}}
+@keyframes opline{to{width:min(420px,70vw)}}
+#opSkip{position:absolute;right:calc(14px + var(--sr,0px));top:calc(14px + var(--st,0px));min-height:40px;background:#1a1420cc;color:#c9b9a0;border:1px solid #5a4a3a;border-radius:4px;padding:6px 14px;cursor:pointer}
+.ophint{position:absolute;left:50%;bottom:calc(20px + var(--sb,0px));white-space:nowrap;transform:translateX(-50%);color:#6a6058;font-size:12px;letter-spacing:.2em}
+#opening.short .ophint{display:none}
+#deathCard{position:fixed;left:50%;top:22%;transform:translateX(-50%);width:max-content;max-width:94vw;box-sizing:border-box;display:flex;gap:18px;align-items:center;padding:18px 26px;background:linear-gradient(90deg,#000000ee,#1a0a0aee,#000000ee);border-top:1px solid #8a2a2a;border-bottom:1px solid #8a2a2a;opacity:0;pointer-events:none;z-index:45;color:#eee}
+#deathCard.show{animation:dcard 4.2s ease forwards}
+#deathCard canvas{width:112px;height:112px;image-rendering:auto;filter:grayscale(1) brightness(.85) contrast(1.1);background:#0c0a10;border:1px solid #6a2a2a;border-radius:4px}
+#deathCard b{display:block;white-space:nowrap;font-size:26px;letter-spacing:.1em}#deathCard span{display:block;color:#d05050;letter-spacing:.6em;font-size:14px;margin:4px 0}#deathCard i{white-space:nowrap;font-style:normal;color:#bbb;font-size:13px}
+@keyframes dcard{0%{opacity:0;transform:translateX(-50%) scale(1.06)}12%{opacity:1;transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
+body.shake #game,body.shake canvas#game{animation:shk .5s linear 2}
+@keyframes shk{0%,100%{transform:translate(0)}20%{transform:translate(5px,-3px)}40%{transform:translate(-6px,2px)}60%{transform:translate(4px,4px)}80%{transform:translate(-3px,-4px)}}
+#deadEnd{background:radial-gradient(circle,#2a0000e8,#000000f8);z-index:60}
+.deadbox{text-align:center;color:#eee;animation:dfade 2.2s ease}
+.deadbox canvas{width:150px;height:150px;image-rendering:auto;filter:grayscale(1) brightness(.75);background:#0c0a10;border:1px solid #6a2a2a;border-radius:4px}
+#deadEnd .deadbox h2{font-size:44px;letter-spacing:.3em;color:#c03030;margin:10px 0 6px;text-shadow:0 0 18px #f00a}
+#deadEnd .deadbox p{color:#ccc;max-width:520px;margin:0 auto 18px;line-height:1.8}
+.deadacts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.deadacts button{min-height:46px;min-width:180px}
+@keyframes dfade{0%{opacity:0;filter:blur(6px)}100%{opacity:1;filter:none}}
+#fxOv.show{animation:fxa 3.2s ease forwards}
+#fxOv.fx-gas{background:radial-gradient(circle,#f4f4f4dd,#cfd6dcf0)}
+#fxOv.fx-tea{background:#000;animation:fxb 3.2s ease forwards}
+#fxOv.fx-bell{background:#000;animation:fxc 3.2s ease forwards}
+#fxOv.fx-fire{background:radial-gradient(circle,#ff6a2066,#5a0a00ee)}
+#fxOv.fx-flash{background:#fff}
+#fxOv.fx-dark{background:#000}
+#fxOv.fx-quake{background:#20101088;animation:fxq 1.2s linear 3}
+@keyframes fxa{0%{opacity:0}15%{opacity:1}70%{opacity:1}100%{opacity:0}}
+@keyframes fxb{0%{opacity:0}40%{opacity:.25}55%{opacity:.9}100%{opacity:0}}
+@keyframes fxc{0%{opacity:0}8%{opacity:.6}12%{opacity:0}20%{opacity:.95}85%{opacity:.95}100%{opacity:0}}
+@keyframes fxq{0%,100%{opacity:.6;transform:translate(0)}25%{transform:translate(6px,-4px)}50%{transform:translate(-5px,3px)}75%{transform:translate(4px,5px)}}
+.codebox{min-width:280px;text-align:center}.codebox p{margin:6px 0;color:var(--dim)}
+#codeDigits{display:flex;gap:10px;justify-content:center;margin:12px 0}
+.cdig{display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid #6a5a40;border-radius:8px;padding:4px}
+.cdig.on{border-color:#e8c878;box-shadow:0 0 8px #e8c87866}
+.cdig b{font-size:34px;font-variant-numeric:tabular-nums;width:40px}
+.cdig button{width:44px;height:36px;font-size:14px}
+.codeacts{display:flex;gap:10px;justify-content:center}.codeacts button{min-width:110px;min-height:44px}
+.codehint{font-size:12px}
+#chEnd{background:#000000e6}
+.chend{text-align:center;color:#f0e6d0;max-width:520px}
+.chend .chk{letter-spacing:.4em;font-size:12px;color:#c9a24a}
+.chend h2{font-size:28px;margin:8px 0 14px}.chend p{line-height:1.8}
+#chEndNext{color:#a89a8c;font-size:13px}.chend button{margin-top:18px;min-width:160px;min-height:44px}
+.ppl{display:flex;gap:10px;align-items:center;padding:8px;border-bottom:1px solid #ffffff14}
+.ppl canvas{width:32px;height:48px;object-fit:contain;image-rendering:pixelated;flex:none}
+.ppl b{display:block}.ppl span{font-size:12px;color:var(--dim)}
+.ppl>div{flex:1;min-width:0}.ppl .tr{flex:none;white-space:nowrap;color:#e8c878;font-size:12px;letter-spacing:0}
+.unity{padding:6px 8px;color:#e8c878}
+#toast{white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis}
+
+/* オーバーレイ */
+.ov{position:fixed;inset:0;display:none;z-index:10;background:#05030acc;padding:calc(16px + var(--st)) calc(16px + var(--sr)) calc(16px + var(--sb)) calc(16px + var(--sl))}
+.ov.show{display:flex;align-items:center;justify-content:center}
+.ov .frame{width:min(980px,100%);max-height:100%;display:flex;flex-direction:column;padding:16px 18px}
+.ov header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.ov h2{margin:0;font-size:22px;font-weight:400;color:var(--gold);flex:1}
+.ov .x{width:44px;height:44px;border:1px solid var(--gold2);background:#0006;border-radius:4px;font-size:18px}
+.btn,.ov button:not(.x){background:linear-gradient(#2a1e36,#1a1222);border:1px solid var(--gold2);border-radius:4px;min-height:44px;padding:6px 14px}
+.btn:hover,.ov button:not(.x):not(:disabled):hover{border-color:var(--gold);background:#352645}
+button:disabled{opacity:.4;cursor:default}
+#mapOv .frame{height:100%}
+#mapTabs{display:flex;gap:6px;flex-wrap:wrap}
+#mapTabs button{min-width:64px}
+#mapTabs button.on{border-color:var(--gold);background:#4a3418;color:#fff3c8}
+#mapWrap{flex:1;position:relative;min-height:240px;margin-top:10px;border:1px solid #ffffff18;border-radius:4px;
+  background:repeating-linear-gradient(0deg,#ffffff06 0 1px,transparent 1px 16px),repeating-linear-gradient(90deg,#ffffff06 0 1px,transparent 1px 16px),#0e0a14}
+#mapCv{position:absolute;inset:0}
+#mapFoot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:13px;color:var(--dim)}
+.lg i{display:inline-block;width:10px;height:10px;margin:0 4px 0 10px;vertical-align:-1px}
+/* 持ち物：横画面に最適化（左グリッド＋右詳細）、縦画面は上下 */
+#invOv .frame,#noteOv .frame{height:100%}
+.tabs{display:flex;gap:6px;overflow-x:auto;flex:none;padding-bottom:2px;scrollbar-width:thin}
+.tabs button{flex:none;min-width:64px;font-size:14px;white-space:nowrap;position:relative}
+.tabs button small{color:var(--dim);font-size:11px;margin-left:2px}
+.tabs button.on{border-color:var(--gold);background:#4a3418;color:#fff3c8}
+.tabs button.new::after,.cell.new::after{content:"";position:absolute;right:4px;top:4px;width:8px;height:8px;border-radius:50%;background:#ff6a50;box-shadow:0 0 6px #ff6a50}
+#invMain{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px;margin-top:10px}
+#invGrid{overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));grid-auto-rows:max-content;gap:8px;align-content:start;padding:2px}
+.cell{position:relative;aspect-ratio:1;padding:4px!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px!important;line-height:1.2;color:var(--dim)}
+.cell .iart{width:44px!important;height:44px!important}
+.cell.on{border-color:var(--gold)!important;background:#3a2a1a!important;color:#fff3c8}
+.cell.from{outline:2px dashed #ffb070;outline-offset:1px}
+.cell.used{opacity:.55}
+.iart{image-rendering:pixelated}
+#invDetail{overflow:auto;border:1px solid #ffffff18;border-radius:4px;padding:12px;background:#0003;display:flex;flex-direction:column;gap:8px}
+#invDetail .big{width:112px!important;height:112px!important;align-self:center;filter:drop-shadow(0 0 10px #0008)}
+.dtext h3{margin:0;font-weight:400;color:#ffe7a0;font-size:18px}
+.dtext h3 em{font-style:normal;font-size:11px;border:1px solid var(--gold);color:var(--gold);padding:0 5px;border-radius:3px;margin-left:6px;vertical-align:2px}
+.dtext h3 em.u{border-color:#888;color:#aaa}
+.dtext p{margin:4px 0 0;font-size:14px;line-height:1.7;text-wrap:pretty;overflow-wrap:anywhere}
+.dtext .found{color:var(--dim);font-size:13px}
+.rel{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+.rel b{font-weight:400;color:var(--dim);width:100%}
+.link{min-height:36px!important;font-size:13px;padding:2px 10px!important;border-style:dashed!important}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;position:sticky;bottom:-12px;padding:8px 0 4px;background:linear-gradient(#0000,#140e1a 30%)}
+.dtext dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0 0;font-size:13px}.dtext dt{color:var(--dim)}.dtext dd{margin:0}
+.dtext h4,.dtext b{font-weight:400;color:var(--dim);font-size:13px;margin:6px 0 0}
+.acts button{flex:1;min-width:90px}
+.acts .pri{border-color:var(--gold)!important;background:#4a3418!important;color:#fff3c8}
+#invHint{min-height:20px;margin-top:6px;font-size:13px;color:#ffb070}
+@media (orientation:portrait){#invMain{grid-template-columns:1fr;grid-template-rows:minmax(110px,.8fr) minmax(0,1.2fr)}#invDetail .big{width:80px!important;height:80px!important}}
+@media (max-height:420px){.ov{padding-top:calc(8px + var(--st));padding-bottom:calc(8px + var(--sb))}.ov .frame{padding:10px 12px}.ov header{margin-bottom:6px}.ov h2{font-size:18px}#invDetail{display:block}#invDetail .big{width:64px!important;height:64px!important;float:left;margin:0 10px 4px 0}.dtext p{font-size:13px}.acts{clear:both}.acts button{min-height:40px}}
+/* 拡大調査 */
+#exOv{z-index:12;background:#05030af4}
+#exOv .frame{height:100%;width:min(900px,100%)}
+#exCount{color:var(--gold);font-size:14px;white-space:nowrap}
+#exBody{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:12px}
+#exWrap{position:relative;min-height:160px;border:1px solid #ffffff18;border-radius:4px;background:radial-gradient(circle,#2a2030,#0b0812);overflow:hidden;touch-action:none}
+#exCv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+#exSidebar{display:flex;flex-direction:column;gap:8px;min-height:0}
+#exCtl{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#exCtl button{font-size:14px;padding:4px 6px!important}
+#exCtl #exSide,#exCtl #exLight{grid-column:span 2}
+#exLight.on{border-color:#ffe08a!important;background:#5a4a20!important;color:#fff3c8}
+#exZoom{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:13px;grid-column:span 2}
+#exCap{flex:1;overflow:auto;font-size:14px;line-height:1.7;background:#0004;border-radius:4px;padding:8px 10px;text-wrap:pretty;overflow-wrap:anywhere}
+@media (orientation:portrait){#exBody{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}#exCtl{grid-template-columns:repeat(4,1fr)}#exCtl #exSide,#exCtl #exLight{grid-column:span 2}#exZoom{grid-column:span 4}#exCap{max-height:7.5em}}
+/* 推理手帳 */
+#noteBody{flex:1;overflow:auto;margin-top:10px;display:flex;flex-direction:column;gap:8px;padding-right:4px}
+#noteBody h4{margin:8px 0 0;font-weight:400;color:var(--gold);font-size:15px;border-bottom:1px solid #d8b25a44;padding-bottom:2px}
+.nent,.nrowi{position:relative;border:1px solid #ffffff18;border-radius:4px;background:#0003;padding:8px 12px}
+.nent.new,.nrowi.new{border-color:#ff8a6a}
+.nent.new::before,.nrowi.new::before{content:"NEW";position:absolute;right:8px;top:-8px;font-size:10px;background:#ff6a50;color:#fff;padding:0 4px;border-radius:2px}
+.nent.focus{box-shadow:0 0 0 2px var(--gold)}
+.nent b,.nrowi b{font-weight:400;color:#ffe7a0}
+.nent p{margin:4px 0 0;font-size:14px;line-height:1.7;text-wrap:pretty;overflow-wrap:anywhere}
+.nent .time{color:var(--gold);font-variant-numeric:tabular-nums;margin-right:8px;font-size:14px}
+.nent .who{color:var(--dim);font-size:13px;margin-left:8px}
+.nent .sv{display:inline-block;margin-top:4px;font-size:11px;border:1px solid #7fd08a;color:#9fe0a8;padding:0 5px;border-radius:3px}
+.nent .chp{float:right;margin-top:4px;font-size:11px;color:var(--dim)}
+.nrowi{display:flex;gap:10px;align-items:center}
+.nrowi>div{flex:1}.nrowi span{display:block;font-size:13px;color:var(--dim)}
+.nrowi em.u{font-style:normal;font-size:11px;color:#aaa;border:1px solid #888;padding:0 4px;border-radius:3px;margin-left:4px}
+/* 操作説明 */
+#helpOv .frame{width:min(720px,100%)}
+#helpBody{overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;font-size:14px}
+#helpBody h3{margin:0 0 4px;font-weight:400;color:var(--gold);font-size:16px}
+#helpBody table{border-collapse:collapse;width:100%}
+#helpBody td{padding:4px 0;border-bottom:1px solid #ffffff12;vertical-align:top}
+#helpBody td:first-child{white-space:nowrap;padding-right:10px;color:var(--ink)}
+#helpBody td:last-child{color:var(--dim)}
+#helpBody kbd{font:inherit;font-size:12px;border:1px solid #ffffff40;border-radius:3px;padding:0 5px;margin:0 1px;background:#0004}
+#helpBody .note{grid-column:1/-1;color:var(--dim);font-size:13px;margin:0}
+@media (max-width:620px){#helpBody{grid-template-columns:1fr}}
+.empty{color:var(--dim);text-align:center;padding:30px 0}
+#menuOv .frame{width:min(440px,100%)}
+#menuBody{display:flex;flex-direction:column;gap:8px;overflow:auto}
+#menuBody h3{margin:0 0 4px;font-weight:400;color:var(--dim);font-size:15px}
+#menuBody .slot{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+#menuBody .slot span{font-size:13px;color:var(--dim)}
+#menuBody .sub{opacity:.85}
+
+/* タイトル */
+#title{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;
+  background:radial-gradient(ellipse at 50% 40%,#0000 0,#0b0812aa 55%,#05030af0 100%);padding:20px}
+#title.show{display:flex}
+#title h1{margin:0;font-weight:400;font-size:clamp(44px,9vw,84px);line-height:1.05;letter-spacing:.06em;color:#f6e6bd;
+  text-shadow:0 3px 0 #2a1808,0 0 30px #d8a24a66}
+#title .en{font-size:15px;color:var(--gold);letter-spacing:.3em;margin-top:-10px}
+#title .lead{max-width:30em;color:var(--dim);font-size:15px;text-wrap:balance}
+#title .menu{display:flex;flex-direction:column;gap:10px;width:min(280px,80vw)}
+#title .menu button{font-size:18px;min-height:52px}
+#title .help{font-size:13px;color:var(--dim);line-height:1.8}
+#title .help b{color:var(--ink);font-weight:400;border:1px solid #ffffff30;border-radius:3px;padding:0 5px;margin:0 2px}
+/* 名前入力 */
+#nameOv{z-index:30}
+#nameOv .frame{width:min(460px,100%);gap:6px}
+.nlead{margin:0 0 6px;color:var(--dim);font-size:15px;text-wrap:pretty}
+#nameIn{width:100%;font:22px/1.4 inherit;color:var(--ink);background:#0b0812;border:2px solid var(--gold2);border-radius:4px;padding:10px 12px;outline:none;-webkit-user-select:text;user-select:text}
+#nameIn:focus{border-color:var(--gold);box-shadow:0 0 0 3px #d8b25a33}
+.nrow{display:flex;justify-content:space-between;gap:12px;min-height:22px;font-size:13px}
+#nameMsg{color:#ff9a8a}
+#nameCnt{color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+#namePrev{min-height:24px;color:var(--gold);font-size:15px;overflow-wrap:anywhere}
+.nbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+.nbtns button{min-width:110px}
+#nameOk:not(:disabled){border-color:var(--gold);background:#4a3418;color:#fff3c8}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-height:520px){#nameOv.show{align-items:flex-start}}
+#menuName{color:var(--dim);font-size:14px;max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dlgText,#menuBody .slot span{overflow-wrap:anywhere}
+@media (max-width:600px){#hudRoom{font-size:14px}#hud .plate{padding:3px 8px;gap:6px}#hudArea{font-size:12px}#hudBtns{gap:6px}#hudBtns button{padding:0 9px;font-size:14px;min-width:44px}
+  #hud{max-width:calc(100vw - 20px - var(--sl) - var(--sr))}#hud .plate{flex-wrap:wrap;max-width:calc(100vw - 250px - var(--sl) - var(--sr));row-gap:0}#hudArea{width:100%}#hudRoom{white-space:normal;word-break:keep-all}#hudObj{font-size:12.5px;padding:4px 9px}#dialog{font-size:16px;padding:12px 16px 16px}}
+/* 選択肢 */
+#dialog.choosing{pointer-events:auto}
+.cq{margin-bottom:8px;color:#ffe7a0}
+.copts{display:flex;flex-direction:column;gap:6px}
+.copt{text-align:left;min-height:44px;padding:6px 14px;border:1px solid var(--gold2);border-radius:4px;background:#0006;font-size:16px}
+.copt.on,.copt:hover{border-color:var(--gold);background:#4a3418;color:#fff3c8}
+.copt.on::before{content:"▶ ";color:var(--gold)}
+@media (max-height:420px){.copts{flex-direction:row;flex-wrap:wrap}.copt{flex:1;min-width:10em;font-size:14px}}
+
+/* ===== エンディング ===== */
+#endSeq{position:fixed;inset:0;z-index:25;display:none;background:#000;opacity:0;--ec:#f2c96a;overflow:hidden}
+#endSeq.show{display:block;animation:efade 1.6s ease forwards}
+@keyframes efade{from{opacity:0}to{opacity:1}}
+#endArt{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated;animation:kb 40s ease-in-out infinite alternate}
+@keyframes kb{from{transform:scale(1.04)}to{transform:scale(1.12) translate(-1.5%,-1%)}}
+#endSeq .vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#0000 35%,#000a 100%),linear-gradient(#0000 55%,#000c);pointer-events:none}
+#endSeq.k-bad .vig{background:radial-gradient(ellipse at 50% 45%,#0000 25%,#100406dd 100%),linear-gradient(#0000 50%,#000d)}
+#endSkip{position:absolute;right:calc(14px + var(--sr));top:calc(12px + var(--st));z-index:3;min-height:44px;padding:4px 16px;border:1px solid #ffffff44;border-radius:22px;background:#0008;font-size:14px;color:#ddd}
+#endSeq.show #endClear.show~#endSkip,#endSeq:has(#endClear.show) #endSkip{display:none}
+#endLine{position:absolute;left:50%;bottom:calc(12% + var(--sb));transform:translateX(-50%);width:min(820px,calc(100% - 40px));margin:0;text-align:center;font-size:clamp(17px,2.6vw,24px);line-height:1.9;color:#fff8e6;text-shadow:0 2px 0 #000,0 0 18px #000;text-wrap:pretty;overflow-wrap:anywhere;min-height:3.8em}
+#endLine.in{animation:lin .9s ease}
+@keyframes lin{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translateX(-50%)}}
+#endLine.rec{color:#e8d8ff;font-size:clamp(18px,2.9vw,27px);text-shadow:0 0 14px #a070ff,0 2px 0 #000}
+#endRec{position:absolute;left:50%;top:calc(14% + var(--st));transform:translateX(-50%);display:none;align-items:center;gap:10px;padding:6px 16px;border:1px solid #a888ff88;border-radius:20px;background:#120a24cc;color:#e8d8ff;font-size:14px}
+#endRec.show{display:flex}
+#endRec i{width:10px;height:10px;border-radius:50%;background:#ff5a5a;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+#endTitleAnim{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;pointer-events:none;background:radial-gradient(ellipse,#0007,#000c)}
+#endTitleAnim.show{display:flex}
+.etc{font-size:clamp(13px,1.8vw,16px);letter-spacing:.35em;color:#e8e0d0}
+#endTitleAnim.show .etc{animation:etc 1.6s ease both}
+@keyframes etc{from{opacity:0;letter-spacing:1.2em}to{opacity:1;letter-spacing:.35em}}
+#etKind{font-size:clamp(14px,2vw,18px);letter-spacing:.2em;color:var(--ec);border:1px solid var(--ec);padding:2px 14px;border-radius:3px}
+#endTitleAnim.show #etKind{animation:eup .8s .7s ease both}
+#etName{font-size:clamp(40px,8vw,84px);line-height:1.15;color:#fff6dc;text-shadow:0 3px 0 #000,0 0 30px var(--ec)}
+#endTitleAnim.show #etName{animation:ename 1.6s 1.1s ease both}
+@keyframes eup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes ename{from{opacity:0;filter:blur(10px);transform:scale(1.15)}to{opacity:1;filter:none;transform:none}}
+.special #etName,.special #ecName{background:linear-gradient(100deg,#fff6dc 20%,var(--ec) 40%,#fff 50%,var(--ec) 60%,#fff6dc 80%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 4s linear infinite}
+#endTitleAnim.show.special #etName,.special #endTitleAnim.show #etName{animation:ename 1.6s 1.1s ease both,shine 4s 2.7s linear infinite}
+@keyframes shine{from{background-position:120% 0}to{background-position:-120% 0}}
+.special #endTitleAnim::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--ec) 35%,transparent),#0000 45%);animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.4}}
+/* クリア画面：横画面は右側パネル、縦画面は下部 */
+#endClear{position:absolute;top:0;bottom:0;right:0;width:min(460px,46%);display:none;flex-direction:column;justify-content:center;gap:12px;padding:calc(18px + var(--st)) calc(22px + var(--sr)) calc(18px + var(--sb)) 26px;
+  background:linear-gradient(90deg,#0000,#07040ce8 18%,#07040cf4);overflow:auto}
+#endClear.show{display:flex;animation:eslide .7s ease both}
+@keyframes eslide{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+#endClear .etc{color:var(--ec);font-size:13px}
+#ecKind{align-self:flex-start;font-size:14px;letter-spacing:.15em;color:#120a14;background:var(--ec);padding:1px 10px;border-radius:2px}
+#ecName{margin:0;font-weight:400;font-size:clamp(30px,4.6vw,46px);line-height:1.15;color:#fff6dc;text-shadow:0 0 18px color-mix(in srgb,var(--ec) 60%,transparent)}
+#ecMsg{margin:0;color:#e8dcc4;font-size:15px;line-height:1.8;text-wrap:pretty}
+#ecSub{margin:-6px 0 0;color:var(--ec);font-size:13px;font-style:italic}#ecSub:empty{display:none}
+.dlrow{display:contents}.dlrow[hidden]{display:none}
+#ecStatus{display:flex;flex-wrap:wrap;gap:2px 10px}#ecStatus .ok{color:#cfe8b8}#ecStatus .ng{color:#a89a8c}
+#endClear{overflow-y:auto}
+#ecNew{display:flex;flex-wrap:wrap;gap:6px}#ecNew span{font-size:12px;border:1px solid var(--ec);color:var(--ec);padding:0 8px;border-radius:10px}
+#endClear dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:14px;padding:8px 12px;border:1px solid #ffffff1c;border-radius:4px;background:#0005}
+#endClear dt{color:var(--dim)}#endClear dd{margin:0;font-variant-numeric:tabular-nums}
+.ecBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ecBtns button,.eov button{background:linear-gradient(#2a1e36,#1a1222);border:1px solid var(--gold2);border-radius:4px;min-height:44px;padding:6px 10px;font-size:14px}
+.ecBtns button:not(:disabled):hover,.eov button:not(:disabled):hover{border-color:var(--gold);background:#352645}
+#ecTitle{border-color:var(--ec)!important}
+@media (orientation:portrait){#endClear{top:auto;left:0;width:auto;max-height:66%;justify-content:flex-start;background:linear-gradient(#0000,#07040cf0 12%);padding-left:calc(20px + var(--sl))}#endLine{bottom:calc(16% + var(--sb))}}
+@media (max-height:430px){#endClear{gap:7px}#ecName{font-size:28px}#ecMsg{font-size:13px;line-height:1.6}#endClear dl{font-size:12px;padding:5px 10px}.ecBtns button{min-height:40px;font-size:13px}}
+/* END LIST・全達成 */
+.eov{position:fixed;inset:0;z-index:27;display:none;align-items:center;justify-content:center;background:#05030ae6;padding:calc(14px + var(--st)) calc(14px + var(--sr)) calc(14px + var(--sb)) calc(14px + var(--sl))}
+.eov.show{display:flex}
+.eov .frame{width:min(980px,100%);max-height:100%;display:flex;flex-direction:column;padding:14px 18px;overflow:auto}
+.eov header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.eov h2{margin:0;font-size:22px;font-weight:400;color:var(--gold);flex:1;letter-spacing:.08em}
+#elBody{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.elc{position:relative;border:2px solid #ffffff1a;border-radius:6px;padding:12px;min-height:150px;background:linear-gradient(#ffffff08,#0004);display:flex;flex-direction:column;gap:6px;--ec:#5a5068}
+.elc.got{border-color:var(--ec);background:linear-gradient(color-mix(in srgb,var(--ec) 16%,transparent),#0006)}
+.elc.got.k-true,.elc.got.k-secret{box-shadow:0 0 18px color-mix(in srgb,var(--ec) 35%,transparent)}
+.elk{font-size:12px;letter-spacing:.14em;color:var(--ec)}
+.elc.got .elk{color:#120a14;background:var(--ec);align-self:flex-start;padding:0 8px;border-radius:2px}
+.eln{font-size:20px;color:#fff6dc;line-height:1.3}
+.elc:not(.got) .eln,.elc:not(.got) .elk{color:#6a6078}
+.elh{margin:auto 0 0;font-size:13px;color:#8a809a}
+.elc.locked{background:repeating-linear-gradient(45deg,#0003 0 8px,#ffffff05 8px 16px)}
+.elc dl{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;margin:auto 0 0;font-size:12px}.elc dt{color:var(--dim)}.elc dd{margin:0;font-variant-numeric:tabular-nums}
+#elFoot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:14px;color:var(--dim)}
+@media (max-width:760px){#elBody{grid-template-columns:repeat(2,minmax(0,1fr))}.elc{min-height:118px}}
+@media (max-height:430px) and (orientation:landscape){#elBody{grid-template-columns:repeat(4,minmax(0,1fr))}.elc{min-height:0;padding:8px}.eln{font-size:16px}}
+#completeOv{z-index:28;background:#000;padding:0}
+#cpArt{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+#completeOv .cpBox{position:relative;width:min(560px,calc(100% - 28px));max-height:calc(100% - 20px);overflow:auto;text-align:center;padding:16px 22px;background:#0b0614ee;border:2px solid var(--gold);border-radius:6px;box-shadow:0 0 40px #d8b25a55;display:flex;flex-direction:column;gap:8px}
+#completeOv h2{margin:0;font-weight:400;font-size:clamp(22px,4vw,34px);letter-spacing:.12em;background:linear-gradient(100deg,#fff6dc 20%,#f2c96a 40%,#fff 50%,#c9a6ff 60%,#fff6dc 80%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 4s linear infinite}
+#completeOv.fresh .cpBox{animation:ename 1.4s ease both}
+#cpList{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#cpList li{border:1px solid var(--ec);border-radius:4px;padding:4px 8px;display:flex;flex-direction:column;font-size:13px;background:color-mix(in srgb,var(--ec) 12%,transparent)}
+#cpList b{font-weight:400;color:var(--ec);font-size:12px;letter-spacing:.1em}#cpList i{font-style:normal;color:var(--dim);font-size:12px}
+#cpMsg{margin:0;font-size:15px;line-height:1.8;color:#f3e8cf;text-wrap:pretty}
+#cpDate{font-size:12px;color:var(--dim)}
+@media (max-height:430px){#cpList{grid-template-columns:repeat(4,1fr)}#cpMsg{font-size:13px;line-height:1.6}}
+@media (prefers-reduced-motion:reduce){#banner.show,#toast.show{animation-duration:.01s}#dlgMore{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="エルディア館 ゲーム画面"></canvas>
+
+<div id="hud"><div class="plate frame"><span id="hudArea">玄関ホール</span><span id="hudRoom">玄関ホール</span><span id="hudTime">23:50</span></div><div id="hudObj" class="frame"></div></div>
+<div id="hudBtns">
+  <button id="btnMap" class="btn frame" aria-label="地図">地図<kbd>M</kbd></button>
+  <button id="btnInv" class="btn frame" aria-label="持ち物">持ち物<kbd>I</kbd></button>
+  <button id="btnNote" class="btn frame" aria-label="推理手帳">手帳<kbd>N</kbd></button>
+  <button id="btnMenu" class="btn frame" aria-label="メニュー">≡<kbd>Esc</kbd></button>
+</div>
+<div id="stick" aria-label="移動スティック" role="application"><div id="stickKnob"></div></div>
+<div id="pad">
+  <button id="btnCancel" aria-label="キャンセル">ｷｬﾝｾﾙ</button>
+  <button id="btnOk" aria-label="決定">決定</button>
+  <button id="btnA" aria-label="調べる・話す">調べる</button>
+</div>
+<div id="armed" class="frame" role="status"></div>
+<div id="reveal" aria-hidden="true"><div id="revealArt"></div><div id="revealName"></div></div>
+
+<div id="dialog" class="frame" role="dialog" aria-live="polite"><canvas id="vnL" class="vn" width="128" height="128" aria-hidden="true"></canvas><canvas id="vnR" class="vn" width="128" height="128" aria-hidden="true"></canvas><canvas id="dlgFace" width="20" height="18"></canvas><div id="dlgName"></div><div id="dlgText"></div><span id="dlgMore">▼</span></div>
+<div id="banner"></div>
+<div id="toast" class="frame"></div>
+<div id="fxOv"></div>
+<div id="deathScene" role="dialog" aria-modal="true"><canvas id="dsCanvas" width="320" height="180"></canvas><p id="dsCap"></p></div>
+<div id="opening" class="ov" role="dialog" aria-modal="true" aria-live="polite"><div class="oprain"></div><div id="opLines"></div><div id="opTitle"><span id="opNo"></span><h1 id="opName"></h1><i></i><p id="opSub"></p></div><button id="opSkip">スキップ ▶▶</button><span class="ophint">タップで次へ</span></div>
+<div id="deathCard" aria-live="assertive"><canvas id="deathFace" width="128" height="128"></canvas><div><b id="deathName"></b><span>死亡</span><i id="deathCause"></i></div></div>
+<div id="deadEnd" class="ov" role="dialog" aria-modal="true"><div class="deadbox"><canvas id="deadFace" width="128" height="128"></canvas><h2 id="deadTitle">DEAD END</h2><p id="deadCause"></p><div class="deadacts"><button id="deadRetry" class="primary">死ぬ直前からやり直す</button><button id="deadTitleBtn">タイトルへ</button></div></div></div>
+<div id="codeOv" class="ov" role="dialog" aria-modal="true" aria-labelledby="codeTitle"><div class="frame codebox"><h2 id="codeTitle">番号を入力</h2><p id="codeDesc"></p><div id="codeDigits"></div><div class="codeacts"><button id="codeOk" class="primary">決定</button><button id="codeNo">やめる</button></div><p class="codehint">数字キー・▲▼・←→でも入力できます</p></div></div>
+<div id="chEnd" class="ov" role="dialog" aria-modal="true"><div class="chend"><p class="chk">CHAPTER CLEAR</p><h2 id="chEndTitle"></h2><p id="chEndSub"></p><p id="chEndNext"></p><button id="chEndOk" class="primary">続ける</button></div></div>
+
+<div id="mapOv" class="ov"><div class="frame">
+  <header><h2>館内図</h2><button class="x" data-close aria-label="閉じる">✕</button></header>
+  <div id="mapTabs"></div>
+  <div id="mapWrap"><canvas id="mapCv"></canvas></div>
+  <div id="mapFoot"><span id="mapStat"></span>
+    <span class="lg"><i style="background:#ff5a5a;border-radius:50%"></i>現在地<i style="background:#c9a24a"></i>探索済み<i style="border:1px dashed #ccc"></i>未探索<i style="background:#e06050"></i>施錠<i style="background:#f4e2a0"></i>通行可</span></div>
+</div></div>
+
+<div id="invOv" class="ov"><div class="frame">
+  <header><h2>持ち物</h2><button class="x" data-close aria-label="閉じる">✕</button></header>
+  <div id="invTabs" class="tabs" role="tablist" aria-label="カテゴリ"></div>
+  <div id="invMain"><div id="invGrid" aria-label="アイテム一覧"></div><div id="invDetail" aria-live="polite"></div></div>
+  <div id="invHint" role="status"></div>
+</div></div>
+
+<div id="exOv" class="ov" role="dialog" aria-modal="true" aria-labelledby="exName"><div class="frame">
+  <header><h2 id="exName"></h2><span id="exCount"></span><button class="x" id="exClose" aria-label="閉じる">✕</button></header>
+  <div id="exBody">
+    <div id="exWrap"><canvas id="exCv" aria-label="アイテム拡大図。タップで細部を調べる"></canvas></div>
+    <div id="exSidebar">
+      <div id="exCtl">
+        <button id="exSide">裏返す</button>
+        <button id="exRotL" aria-label="左に回す">↺ 回す</button><button id="exRotR" aria-label="右に回す">回す ↻</button>
+        <button id="exOut" aria-label="縮小">－</button><button id="exIn" aria-label="拡大">＋</button>
+        <span id="exZoom">×1.0</span>
+        <button id="exLight" aria-pressed="false">光にかざす</button>
+      </div>
+      <div id="exCap" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+</div></div>
+
+<div id="noteOv" class="ov"><div class="frame">
+  <header><h2>推理手帳</h2><button class="x" data-close aria-label="閉じる">✕</button></header>
+  <div id="noteTabs" class="tabs" role="tablist" aria-label="手帳の項目"></div>
+  <div id="noteBody"></div>
+</div></div>
+
+<div id="helpOv" class="ov"><div class="frame">
+  <header><h2>操作説明・キー設定</h2><button class="x" data-close aria-label="閉じる">✕</button></header>
+  <div id="helpBody">
+    <div><h3>キーボード</h3><table>
+      <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></td><td>移動</td></tr>
+      <tr><td><kbd>Shift</kbd></td><td>走る</td></tr>
+      <tr><td><kbd>E</kbd> / <kbd>Enter</kbd> / <kbd>Space</kbd></td><td>調べる・話す・決定・会話を送る</td></tr>
+      <tr><td><kbd>Esc</kbd> / <kbd>X</kbd></td><td>キャンセル（使用中のアイテムを取り消す・画面を閉じる）／メニュー</td></tr>
+      <tr><td><kbd>I</kbd></td><td>持ち物</td></tr>
+      <tr><td><kbd>N</kbd></td><td>推理手帳</td></tr>
+      <tr><td><kbd>M</kbd> / <kbd>Tab</kbd></td><td>館内図</td></tr>
+      <tr><td><kbd>H</kbd> / <kbd>F1</kbd></td><td>この操作説明</td></tr>
+      <tr><td>マウス</td><td>床をクリックでその場所へ移動・調べる</td></tr>
+    </table></div>
+    <div><h3>タッチ</h3><table>
+      <tr><td>左下のスティック</td><td>360°移動。倒した量で速さが変わり、離すと止まる</td></tr>
+      <tr><td>調べる（大）</td><td>調べる・話す・アイテムを使う。光っているときは目の前に何かある</td></tr>
+      <tr><td>決定</td><td>会話を送る・選択中のボタンを押す</td></tr>
+      <tr><td>キャンセル</td><td>使用中のアイテムを取り消す・画面を閉じる</td></tr>
+      <tr><td>上のボタン</td><td>地図・持ち物・手帳・メニュー</td></tr>
+      <tr><td>拡大調査</td><td>タップで細部、2本指で拡大、ドラッグで移動</td></tr>
+    </table></div>
+    <p class="note">アイテムを使うには、持ち物で「使う」を選んでから、使いたい場所の前で「調べる」。組み合わせは持ち物の「組み合わせる」から。</p>
+  </div>
+</div></div>
+
+<div id="menuOv" class="ov"><div class="frame">
+  <header><h2>メニュー</h2><span id="menuName"></span><button class="x" data-close aria-label="閉じる">✕</button></header>
+  <div id="menuBody"></div>
+</div></div>
+
+<div id="nameOv" class="ov" role="dialog" aria-modal="true" aria-labelledby="nameTitle"><div class="frame">
+  <header><h2 id="nameTitle">あなたの名前</h2></header>
+  <p class="nlead">招待状の宛名になる名前です。館の人々は、あなたをこの名前で呼びます。</p>
+  <label for="nameIn" class="vh">主人公の名前</label>
+  <input id="nameIn" type="text" lang="ja" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-describedby="nameMsg nameCnt">
+  <div class="nrow"><span id="nameMsg" role="status" aria-live="polite"></span><span id="nameCnt">0 / 10</span></div>
+  <div id="namePrev" aria-hidden="true"></div>
+  <div class="nbtns"><button id="nameBack" class="sub">もどる</button><button id="nameOk" disabled>決定</button></div>
+</div></div>
+
+<div id="title">
+  <h1>エルディア館</h1>
+  <div class="en">ELDIA MANOR</div>
+  <p class="lead">十八年前の今夜、この館の地下で一人が死に、母は消えた。<br>招かれた十人と管理人。夜明けまでに、あの夜の真実を。</p>
+  <div class="menu"><button id="btnNew">はじめから</button><button id="btnCont">つづきから</button><button id="btnEndList">END LIST</button></div>
+  <div class="help pc"><b>WASD</b>/<b>←↑↓→</b> 移動　<b>Shift</b> 走る　<b>E</b>/<b>Enter</b> 調べる・決定<br><b>I</b> 持ち物　<b>N</b> 手帳　<b>M</b> 地図　<b>Esc</b> キャンセル・メニュー　<b>H</b> 操作説明</div>
+  <div class="help sp">左下のスティックで移動<br>右下のボタンで 調べる・決定・キャンセル</div>
+</div>
+
+<div id="endSeq" aria-live="polite">
+  <canvas id="endArt" aria-hidden="true"></canvas>
+  <div class="vig"></div>
+  <div id="endRec"><i></i>録音を再生中</div>
+  <p id="endLine"></p>
+  <div id="endTitleAnim"><div class="etc">ENDING COMPLETE</div><div id="etKind"></div><div id="etName"></div></div>
+  <section id="endClear" role="dialog" aria-labelledby="ecName">
+    <div class="etc">ENDING COMPLETE</div>
+    <div id="ecKind"></div>
+    <h2 id="ecName"></h2>
+    <p id="ecMsg"></p>
+    <p id="ecSub"></p>
+    <div id="ecNew"></div>
+    <dl><dt>犠牲者</dt><dd id="ecVictims"></dd><div id="ecSurvRow" class="dlrow"><dt>生存者</dt><dd id="ecSurv"></dd></div><dt>事件の解決状況</dt><dd id="ecStatus"></dd><dt>証拠の達成状況</dt><dd id="ecEvid"></dd><dt>クリア時のプレイ時間</dt><dd id="ecPlay"></dd><dt>到達回数</dt><dd id="ecCount"></dd><dt>エンディング達成</dt><dd id="ecDone"></dd></dl>
+    <div class="ecBtns">
+      <button id="ecTitle">タイトルに戻る</button>
+      <button id="ecRetry" title="最終局面の直前から再挑戦">同じセーブから再挑戦</button>
+      <button id="ecNew2">最初から新しく始める</button>
+      <button id="ecList">END LIST を見る</button>
+    </div>
+  </section>
+  <button id="endSkip" aria-label="演出をスキップ">スキップ ▶▶</button>
+</div>
+
+<div id="endListOv" class="eov" role="dialog" aria-modal="true" aria-labelledby="elTitle"><div class="frame">
+  <header><h2 id="elTitle">END LIST</h2><button id="elClose" class="x" aria-label="閉じる" style="width:44px;height:44px">✕</button></header>
+  <div id="elBody"></div>
+  <div id="elFoot"><span id="elStat"></span><button id="elComplete" hidden>コンプリート記念を見る</button></div>
+</div></div>
+
+<div id="completeOv" class="eov" role="dialog" aria-modal="true" aria-labelledby="cpTitle">
+  <canvas id="cpArt" aria-hidden="true"></canvas>
+  <div class="cpBox">
+    <h2 id="cpTitle">ALL ENDINGS COMPLETE</h2>
+    <ul id="cpList"></ul>
+    <p id="cpMsg"></p>
+    <div id="cpDate"></div>
+    <button id="cpClose">閉じる</button>
+  </div>
+</div>
+
+<script src="js/data/story.js"></script>
+<script src="js/data/sprites.js"></script>
+<script src="js/data/endings.js"></script>
+<script src="js/data/story2.js"></script>
+<script src="js/data/story3.js"></script>
+<script src="js/art.js"></script>
+<script src="js/items.js"></script>
+<script src="js/ending.js"></script>
+<script src="js/deathscene.js"></script>
+<script src="js/engine.js"></script>
+</body>
+</html>
