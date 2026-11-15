@@ -678,6 +678,16 @@ window.QUVERIS_GAMES = ${JSON.stringify(reg.games, null, 2)};
     if (!res.ok) throw new ApiError("unavailable", res.status);
     return res.json();
   }
+  // Make sure quveris.config.json names this repository (the comments API uses it to recognise the owner).
+  async function ensureConfig() {
+    const f = await api(R(`/contents/quveris.config.json?ref=${encodeURIComponent(S.repo.branch)}`), { allow: [404] });
+    let current = "";
+    if (f && !f.__status && f.content) { try { current = JSON.parse(fromB64utf8(f.content)).repo || ""; } catch (_) {} }
+    if (current === S.repo.full) return false; // already correct
+    await deploy({ add: [{ path: "/quveris.config.json", blob: new Blob([JSON.stringify({ repo: S.repo.full }, null, 2)], { type: "application/json" }) }] },
+      () => {}, "Set comments owner");
+    return true;
+  }
   async function loadComments() {
     const box = $("[data-cmts]");
     box.innerHTML = '<p class="muted">読み込み中…</p>';
@@ -696,7 +706,15 @@ window.QUVERIS_GAMES = ${JSON.stringify(reg.games, null, 2)};
           <li>変数名を <b>COMMENTS</b>、名前空間に <b>quveris-comments</b> を選んで保存</li>
           <li>この管理ページの「サイト本体を更新」で最新の zip をもう一度入れる（反映のため）</li></ol></div>`;
       } else if (err.status === 4031) {
-        box.innerHTML = `<p class="muted">${esc(err.message)}</p>`;
+        // The owner check needs quveris.config.json in the repo. Create/fix it automatically.
+        try {
+          const repaired = await ensureConfig();
+          box.innerHTML = repaired
+            ? '<p class="muted">感想の管理の設定を自動で直しました。<b>1〜2分</b>待ってから、上の「更新」ボタンを押してください。</p>'
+            : `<p class="muted">${esc(err.message)}</p>`;
+        } catch (e2) {
+          box.innerHTML = `<p class="muted">${esc(err.message)}</p>`;
+        }
       } else {
         box.innerHTML = '<p class="muted">このサイトでは感想機能が使えません（Cloudflare Pages で公開しているときに使えます）。</p>';
       }
