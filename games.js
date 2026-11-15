@@ -7,7 +7,7 @@
  * entry : ゲーム本体の相対パス（games/<id>/index.html）
  * video : PV（games/<id>/pv.mp4 または YouTube / TikTok の URL）
  * links : 外部公開先 [{ label: "itch.io", url: "https://..." }]
- * 最終更新: 2026-11-15T20:30:40.314Z
+ * 最終更新: 2026-11-15T22:02:59.598Z
  * ===================================================================== */
 
 window.QUVERIS_SITE = {
@@ -48,7 +48,8 @@ window.QUVERIS_GAMES = [
     "tags": [],
     "version": "1.0.0",
     "updated": "2026-11-16",
-    "links": []
+    "links": [],
+    "video": "games/game-mwiahbjs/pv.mp4"
   },
   {
     "id": "yoiakarimachi",
