@@ -358,6 +358,11 @@ button { font: inherit; color: inherit; }
 .cmt-form__msg { margin: 0; font-size: 14px; color: var(--mint); min-height: 1em; }
 .hp { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 
+/* top page: no big mascot image (games show up right away on every screen) */
+.hero .hero__visual { display: none; }
+.hero .hero__grid { grid-template-columns: 1fr; }
+.hero .dialog { max-width: 640px; }
+
 /* hobby notice */
 .hobby { position: relative; padding: 30px clamp(18px, 4vw, 34px) 22px; max-width: 820px; }
 .hobby__tag {

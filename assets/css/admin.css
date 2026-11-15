@@ -78,3 +78,7 @@ input[type="radio"], input[type="checkbox"] { accent-color: var(--mint); width: 
 .ng-hidden { position: relative; }
 .ng-hidden p { filter: blur(6px); user-select: none; pointer-events: none; }
 .ng-hidden button { position: absolute; inset: 0; width: 100%; background: transparent; border: 0; color: var(--pink); font-family: var(--font); font-size: 14px; cursor: pointer; text-shadow: 0 0 6px var(--ink), 0 0 2px var(--ink); }
+
+.order-btns { display: flex; gap: 4px; flex: 0 0 auto; }
+.order-btns .btn { flex: 0 0 auto; min-width: 46px; padding: 0 10px; }
+.admin-game:first-child [data-act="up"], .admin-game:last-child [data-act="down"] { visibility: hidden; }

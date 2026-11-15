@@ -308,6 +308,7 @@ window.QUVERIS_GAMES = ${JSON.stringify(reg.games, null, 2)};
         </div>
         <div class="admin-game__btns">
           ${playable ? `<a class="btn btn--sm btn--ghost" href="${esc(base)}play.html?id=${encodeURIComponent(g.id)}" target="_blank" rel="noopener">あそぶ</a>` : ""}
+          <span class="order-btns"><button class="btn btn--sm btn--ghost" type="button" data-act="up" aria-label="上へ">▲</button><button class="btn btn--sm btn--ghost" type="button" data-act="down" aria-label="下へ">▼</button></span>
           <button class="btn btn--sm" type="button" data-act="edit">更新・編集</button>
           <button class="btn btn--sm btn--ghost" type="button" data-act="video">${g.video ? "PVを変更" : "PVを追加"}</button>
           <button class="btn btn--sm btn--ghost" type="button" data-act="toggle">${g.status === "released" ? "開発中にする" : "公開中にする"}</button>
@@ -327,6 +328,7 @@ window.QUVERIS_GAMES = ${JSON.stringify(reg.games, null, 2)};
     if (btn.dataset.act === "toggle") toggleGame(g).catch(handleError);
     if (btn.dataset.act === "video") editVideo(g);
     if (btn.dataset.act === "edit") editGame(g);
+    if (btn.dataset.act === "up" || btn.dataset.act === "down") moveGame(g, btn.dataset.act === "up" ? -1 : 1).catch((err) => { S.busy = false; handleError(err); });
   });
 
   async function runDeploy(title, change, regAfter) {
@@ -359,6 +361,18 @@ window.QUVERIS_GAMES = ${JSON.stringify(reg.games, null, 2)};
     const reg = { site: S.registry.site, games: S.registry.games.map((x) => (x.id === g.id ? { ...x, status: toReleased ? "released" : "development", updated: today() } : x)) };
     await runDeploy("反映しています", {}, reg);
     modal.body(`<p>${esc(g.title)} を${toReleased ? "公開中" : "開発中"}にしました。</p>`);
+    modal.buttons([{ label: "OK", onClick: () => modal.close() }]);
+  }
+
+  /* ------------------------------------------------------------ reorder */
+  async function moveGame(g, dir) {
+    const list = S.registry.games.slice();
+    const i = list.findIndex((x) => x.id === g.id);
+    const k = i + dir;
+    if (i < 0 || k < 0 || k >= list.length) return;
+    [list[i], list[k]] = [list[k], list[i]];
+    await runDeploy("並び順を変えています", {}, { site: S.registry.site, games: list });
+    modal.body("<p>並び順を変えました。サイトにはこの順番で表示されます。</p>");
     modal.buttons([{ label: "OK", onClick: () => modal.close() }]);
   }
 
@@ -612,7 +626,7 @@ window.QUVERIS_GAMES = ${JSON.stringify(reg.games, null, 2)};
         links: []
       };
       if (vEntry) game.video = vEntry.rel; else if (vUrl) game.video = vUrl;
-      const reg = { site: S.registry.site, games: [game].concat(S.registry.games) };
+      const reg = { site: S.registry.site, games: S.registry.games.concat([game]) };
       S.busy = false;
       await runDeploy("ゲームを追加しています", { add }, reg);
       const base = siteBase();

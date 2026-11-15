@@ -300,8 +300,8 @@
     els.forEach((e) => io.observe(e));
   }
 
-  // sort: released first, then registry order
-  const sortGames = (list) => list.slice().sort((a, b) => (a.status === b.status ? a.order - b.order : a.status === "released" ? -1 : 1));
+  // order: exactly as registered (the order games were added / arranged in the admin page)
+  const sortGames = (list) => list.slice().sort((a, b) => a.order - b.order);
 
   /* ------------------------------------------------------------ pages */
   const pages = {
