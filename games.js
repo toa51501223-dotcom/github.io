@@ -7,7 +7,7 @@
  * entry : ゲーム本体の相対パス（games/<id>/index.html）
  * video : PV（games/<id>/pv.mp4 または YouTube / TikTok の URL）
  * links : 外部公開先 [{ label: "itch.io", url: "https://..." }]
- * 最終更新: 2026-11-15T22:11:41.056Z
+ * 最終更新: 2026-11-17T18:18:41.599Z
  * ===================================================================== */
 
 window.QUVERIS_SITE = {
@@ -76,5 +76,25 @@ window.QUVERIS_GAMES = [
     "updated": "2026-11-16",
     "links": [],
     "video": "games/game-mwiahbjs/pv.mp4"
+  },
+  {
+    "id": "pro-player-killer",
+    "title": "PRO_PLAYER_KILLER",
+    "genre": "アクション",
+    "summary": "",
+    "description": "",
+    "status": "released",
+    "entry": "games/pro-player-killer/index.html",
+    "thumbnail": "",
+    "accent": "purple",
+    "orientation": "any",
+    "controls": {
+      "pc": "-",
+      "mobile": "-"
+    },
+    "tags": [],
+    "version": "1.0.0",
+    "updated": "2026-11-18",
+    "links": []
   }
 ];
