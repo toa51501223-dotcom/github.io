@@ -7,7 +7,7 @@
  * entry : ゲーム本体の相対パス（games/<id>/index.html）
  * video : PV（games/<id>/pv.mp4 または YouTube / TikTok の URL）
  * links : 外部公開先 [{ label: "itch.io", url: "https://..." }]
- * 最終更新: 2026-11-19T13:25:04.818Z
+ * 最終更新: 2026-11-20T11:53:41.372Z
  * ===================================================================== */
 
 window.QUVERIS_SITE = {
@@ -93,8 +93,8 @@ window.QUVERIS_GAMES = [
       "mobile": "-"
     },
     "tags": [],
-    "version": "1.0.2",
-    "updated": "2026-11-19",
+    "version": "1.0.3",
+    "updated": "2026-11-20",
     "links": []
   }
 ];
